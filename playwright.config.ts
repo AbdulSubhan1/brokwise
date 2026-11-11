@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// End-to-end tests run Brokwise against a real local PolicyDesk (branch feat/website-api) with its own test database.
+// End-to-end tests run Brokwise against a real local PolicyDesk (branch feat/website-plans) with its own test database.
 const POLICYDESK_DIR = process.env.POLICYDESK_DIR ?? "../policydesk-website";
 // POLICYDESK_PORT lets the suite run when 3070 is already taken on this machine
 const POLICYDESK_PORT = Number(process.env.POLICYDESK_PORT ?? 3070);

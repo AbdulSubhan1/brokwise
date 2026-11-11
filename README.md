@@ -10,15 +10,17 @@ assigns a coordinator automatically. The visitor's journey is kept in a signed, 
 
 - `/` home, with the lines of business (only Car is active for now)
 - `/car` choose between "Get prices now" and "Call me back"
-- `/car/details` full form (creates an opportunity and a lead)
+- `/car/details` full form (creates an opportunity and a lead), then on to the plans
 - `/car/quick` short form (creates an opportunity)
 - `/car/received` request received, with the assigned coordinator in the header
+- `/car/plans` car plans with add-ons and a live total (full-form journeys only)
+- `/car/selected` the saved plan and add-ons, priced by PolicyDesk, with the quote reference
 
 More in [`docs/kb/`](docs/kb/README.md) and the design in [`docs/superpowers/specs/`](docs/superpowers/specs/2026-11-11-brokwise-design.md).
 
 ## Run it locally with PolicyDesk
 
-You need PolicyDesk with the website API (branch `feat/website-api`) running next to Brokwise.
+You need PolicyDesk with the website API (plans and selection: branch `feat/website-plans`) running next to Brokwise.
 
 1. Start PolicyDesk on port 3070 with a website secret:
 
@@ -53,5 +55,5 @@ The app checks these when it first needs them and stops with a clear message if 
 | `npm run build` / `npm start` | Production build and server. |
 | `npm run lint` | ESLint. |
 | `npm run typecheck` | TypeScript check. |
-| `npm test` | Unit tests (Vitest): request signing and form rules. |
+| `npm test` | Unit tests (Vitest): request signing, form rules, money format and the plan card total. |
 | `npm run test:e2e` | End-to-end tests (Playwright). Starts PolicyDesk on 3070 (from `POLICYDESK_DIR`, default `../policydesk-website`) and Brokwise on 3100. Run `npx playwright install chromium` once first. |
