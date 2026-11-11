@@ -1,16 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
 import { sendQuickForm } from "@/app/car/actions";
-import { EMPTY_FORM } from "@/lib/form-state";
 import { CarFields } from "./car-fields";
+import { useCarForm } from "./use-car-form";
 import { ContactFields } from "./contact-fields";
 import { FormError, FormSection, SubmitButton } from "./form-controls";
 
 export function QuickForm() {
-  const [state, action, pending] = useActionState(sendQuickForm, EMPTY_FORM);
+  const { state, action, pending, onSubmit } = useCarForm(sendQuickForm);
   return (
-    <form action={action} noValidate className="flex flex-col gap-6">
+    <form action={action} onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
       <FormSection title="About you">
         <ContactFields state={state} />
       </FormSection>

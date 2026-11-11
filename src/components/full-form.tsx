@@ -1,17 +1,16 @@
 "use client";
 
-import { useActionState } from "react";
 import { sendFullForm } from "@/app/car/actions";
-import { EMPTY_FORM } from "@/lib/form-state";
 import { CarFields } from "./car-fields";
+import { useCarForm } from "./use-car-form";
 import { MobileField } from "./contact-fields";
 import { FieldError, FormError, FormSection, SubmitButton, TextField } from "./form-controls";
 
 export function FullForm() {
-  const [state, action, pending] = useActionState(sendFullForm, EMPTY_FORM);
+  const { state, action, pending, onSubmit } = useCarForm(sendFullForm);
   const { values, errors } = state;
   return (
-    <form action={action} noValidate className="flex flex-col gap-6">
+    <form action={action} onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
       <FormSection title="Your car">
         <CarFields state={state} />
         <fieldset aria-describedby={errors.gccSpec ? "gccSpec-error" : undefined}>
