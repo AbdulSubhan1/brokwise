@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Brokwise
 
-## Getting Started
+Brokwise is a made-up insurance broker's website, car insurance first. It is the demo merchant for
+PaySandbox (a fake payment gateway) and uses PolicyDesk (an insurance CRM) as its back office. Every
+person, insurer and number on it is made up.
 
-First, run the development server:
+The website has no database. Its forms call PolicyDesk's private website API with signed
+server-to-server requests; PolicyDesk stores the opportunity (and, for the full form, the lead) and
+assigns a coordinator automatically. The visitor's journey is kept in a signed, http-only cookie.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- `/` home, with the lines of business (only Car is active for now)
+- `/car` choose between "Get prices now" and "Call me back"
+- `/car/details` full form (creates an opportunity and a lead)
+- `/car/quick` short form (creates an opportunity)
+- `/car/received` request received, with the assigned coordinator in the header
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+More in [`docs/kb/`](docs/kb/README.md) and the design in [`docs/superpowers/specs/`](docs/superpowers/specs/2026-11-11-brokwise-design.md).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run it locally with PolicyDesk
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+You need PolicyDesk with the website API (branch `feat/website-api`) running next to Brokwise.
 
-## Learn More
+1. Start PolicyDesk on port 3070 with a website secret:
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   cd ../policydesk-website
+   WEBSITE_API_SECRET=dev-secret npm run dev -- -p 3070
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Set up Brokwise:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   ```bash
+   npm install
+   cp .env.example .env.local   # then set the values below
+   npm run dev                  # http://localhost:3000
+   ```
 
-## Deploy on Vercel
+## Environment variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Name | What it is |
+| --- | --- |
+| `POLICYDESK_API_URL` | Where PolicyDesk runs, e.g. `http://localhost:3070`. |
+| `WEBSITE_API_SECRET` | Shared secret that signs every call to PolicyDesk. Same value as `WEBSITE_API_SECRET` in PolicyDesk (`dev-secret` in the example above). |
+| `JOURNEY_COOKIE_SECRET` | Signs the `bw_journey` cookie. At least 32 characters. |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The app checks these when it first needs them and stops with a clear message if one is missing.
+
+## Scripts
+
+| Command | Does |
+| --- | --- |
+| `npm run dev` | Development server. |
+| `npm run build` / `npm start` | Production build and server. |
+| `npm run lint` | ESLint. |
+| `npm run typecheck` | TypeScript check. |
+| `npm test` | Unit tests (Vitest): request signing and form rules. |
+| `npm run test:e2e` | End-to-end tests (Playwright). Starts PolicyDesk on 3070 (from `POLICYDESK_DIR`, default `../policydesk-website`) and Brokwise on 3100. Run `npx playwright install chromium` once first. |
