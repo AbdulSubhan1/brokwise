@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 // End-to-end tests run Brokwise against a real local PolicyDesk (branch feat/website-api) with its own test database.
 const POLICYDESK_DIR = process.env.POLICYDESK_DIR ?? "../policydesk-website";
-const POLICYDESK_PORT = 3070;
+// POLICYDESK_PORT lets the suite run when 3070 is already taken on this machine
+const POLICYDESK_PORT = Number(process.env.POLICYDESK_PORT ?? 3070);
 const PORT = 3100;
 const WEBSITE_API_SECRET = "e2e-secret";
 const JOURNEY_COOKIE_SECRET = "e2e-journey-cookie-secret-32-chars!";
