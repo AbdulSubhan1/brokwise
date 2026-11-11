@@ -270,3 +270,24 @@ export type OrderView = z.infer<typeof orderViewSchema>;
 export async function getOrder(publicId: string): Promise<Result<OrderView>> {
   return request("GET", `/opportunities/${encodeURIComponent(publicId)}/order`, orderViewSchema);
 }
+
+export type PayLinkResult =
+  | { ok: true; publicId: string; status: "active" | "paid" }
+  | { ok: false; status: 404 | 410 | 502; code: string };
+
+const payLinkSchema = z.object({
+  opportunity: z.object({ publicId: z.guid() }),
+  status: z.enum(["active", "paid"]),
+});
+
+/**
+ * Opens a coordinator's pay link: which journey it belongs to and whether its order is paid. 404 `not_found` for an
+ * unknown or revoked token (PolicyDesk doesn't say which), 410 `link_expired`; anything else, PolicyDesk being
+ * unreachable included, comes back as 502.
+ */
+export async function openPayLink(token: string): Promise<PayLinkResult> {
+  const result = await request("POST", `/pay-links/${encodeURIComponent(token)}/open`, payLinkSchema, {});
+  if (result.ok) return { ok: true, publicId: result.data.opportunity.publicId, status: result.data.status };
+  if (result.status === 404 || result.status === 410) return { ok: false, status: result.status, code: result.code };
+  return { ok: false, status: 502, code: result.code };
+}

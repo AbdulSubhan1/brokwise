@@ -5,7 +5,7 @@ only **car** is built today. It is a demo merchant for PaySandbox (a fake paymen
 PolicyDesk (an insurance CRM) as its back office. All people, insurers and numbers are made up.
 
 Pages in this folder:
-- this overview: what Brokwise is, the three systems, the journeys and what steps 1 to 3 ship;
+- this overview: what Brokwise is, the three systems, the journeys and what steps 1 to 4 ship;
 - [future-scope.md](future-scope.md): what is planned later and what triggers it.
 
 The full design is in [`docs/superpowers/specs/2026-11-11-brokwise-design.md`](../superpowers/specs/2026-11-11-brokwise-design.md).
@@ -51,8 +51,11 @@ The code is in `src/lib/signature.ts` (signing) and `src/lib/policydesk.ts` (the
 **B. Assisted ("Call me back")**
 1. The visitor fills the short form (name, mobile, email, car make, model, year). PolicyDesk creates the
    opportunity only and assigns a coordinator automatically.
-2. Later steps: the coordinator completes the details in PolicyDesk, converts it to a lead and sends a
-   private payment link.
+2. The coordinator calls the customer, completes the car and driver details in PolicyDesk, qualifies the
+   opportunity and converts it to a lead (no advisor yet).
+3. With the customer, the coordinator picks the plan and add-ons in PolicyDesk and creates a private
+   payment link, `brokwise.vercel.app/pay/<token>`, which they send to the customer (step 4).
+4. The customer opens the link and pays on the same payment and thank-you pages as journey A.
 
 One rule for both: the coordinator owns everything before payment; the advisor comes in after payment.
 
@@ -155,8 +158,46 @@ page.
 **API calls** (signed as in step 1): `GET /opportunities/{publicId}/payment` (lines, total, quote
 reference, `ready` or `already_paid`), `POST /opportunities/{publicId}/payment` (`{ checkoutUrl }`) and
 `GET /opportunities/{publicId}/order` (the latest order with masked email and phone, and the advisor).
-The pay-link routes from the design (`/payments/{publicIdOrPayToken}`) come with the assisted flow in step 4.
+The assisted flow's pay links came in step 4 (below).
 
 **Tests.** Unit: the header card shows "Your advisor" for an advisor. E2E (`e2e/payment.spec.ts`) runs
 against local PolicyDesk and PolicyDesk's fake PaySandbox (`e2e/fake-paysandbox.mjs` there, port 3072),
 whose checkout page has "Pay" and "Pay without webhook" buttons.
+
+## What step 4 ships
+
+Journey B is now complete: a short-form customer pays through a link their coordinator sends.
+
+| Page | What it does |
+| --- | --- |
+| `/car/received` | For a short-form journey it adds "When your coordinator has your details, they'll send you a payment link." |
+| `/pay/<token>` | The coordinator's private payment link. Not a page: it opens the link with PolicyDesk, sets the journey cookie for that opportunity and sends the customer on (see below). |
+| `/pay/expired` | "This payment link has expired. Ask your coordinator for a new one." and the help desk's email and phone. |
+| `/pay/invalid` | "This payment link isn't valid. Check the link your coordinator sent, or ask for a new one." and the help desk. With `?retry=1` (PolicyDesk couldn't be reached) it says "We couldn't open your link. Please try again." |
+
+**In PolicyDesk** (all on the opportunity page, for website opportunities): the coordinator completes the
+car details, qualifies and converts the opportunity without picking an advisor ("The advisor is assigned
+automatically after the customer pays."), chooses the plan and add-ons, and creates the link. The link
+is shown once; PolicyDesk stores only a SHA-256 hash of the token. A link lasts **72 hours**, a new link
+revokes the lead's older ones, and a link is dead once the order is paid. If the coordinator changes the
+plan after sending the link, the link still works and the payment page shows the new choice and total.
+
+**Opening a link.** The token is 32 random bytes in base64url (43 characters). The website checks the
+shape first and sends anything else to `/pay/invalid` without asking PolicyDesk. Then it calls
+`POST /pay-links/{token}/open` (signed, body `{}`):
+
+| PolicyDesk answers | The website |
+| --- | --- |
+| 200 `status: "active"` | sets the journey cookie for `opportunity.publicId`, goes to `/car/payment` |
+| 200 `status: "paid"` | sets the journey cookie, goes to `/car/thank-you` |
+| 410 `link_expired` | `/pay/expired`, no cookie |
+| 404 `not_found` (unknown or revoked, PolicyDesk doesn't say which) | `/pay/invalid`, no cookie |
+| anything else, or PolicyDesk unreachable | `/pay/invalid?retry=1`, no cookie |
+
+From the payment page on, everything is step 3: the same Pay button, PaySandbox checkout, webhook,
+advisor after payment and thank-you page.
+
+**Tests.** Unit: the token-shape check (`src/lib/pay-link.test.ts`). E2E (`e2e/assisted.spec.ts`): call me
+back → the coordinator works the opportunity in PolicyDesk's own pages (signed in with its demo Admin
+button) and creates a link → the customer pays through `/pay/<token>` → thank-you with the advisor; the
+paid link opened again → thank-you; a garbage or unknown token → the invalid page and no cookie.
