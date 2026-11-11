@@ -29,6 +29,8 @@ async function fillFullForm(page: Page) {
   await page.getByLabel("Mobile number").fill("3331234567");
   await page.getByRole("button", { name: "Get prices" }).click();
   await expect(page).toHaveURL("/car/plans", { timeout: 30_000 });
+  // The URL changes before the plans stream in, so wait for the cards before looking at the page
+  await expect(page.getByRole("article").first()).toBeVisible({ timeout: 30_000 });
 }
 
 function cards(page: Page): Locator {
@@ -67,7 +69,10 @@ test("full form → plans page lists plans cheapest first", async ({ page }) => 
   await fillFullForm(page);
   await expect(page.getByRole("heading", { name: "Choose your plan" })).toBeVisible();
   await expect(page.getByText("Prices are yearly, in US dollars.")).toBeVisible();
-  await expect(page.getByText("Demo site: use made-up details. Payments are in PaySandbox test mode.")).toBeVisible();
+  // Next keeps the previous page hidden in the DOM for back navigation, so look only in the visible main
+  await expect(
+    page.getByRole("main").getByText("Demo site: use made-up details. Payments are in PaySandbox test mode."),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Your coordinator" })).toBeVisible();
 
   await expect(cards(page).first()).toBeVisible();
