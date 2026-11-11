@@ -11,9 +11,8 @@ const PORT = 3100;
 const WEBSITE_API_SECRET = "e2e-secret";
 const JOURNEY_COOKIE_SECRET = "e2e-journey-cookie-secret-32-chars!";
 const PAYSANDBOX_SECRET_KEY = "sk_test_e2e";
-// TODO(step 3): keep equal to PAYSANDBOX_WEBHOOK_SECRET in PolicyDesk's playwright.config.ts (not written yet when
-// this was added): whsec_ + base64 of 24 fixed bytes (here 0x01…0x18). The fake signs its webhooks with it.
-const PAYSANDBOX_WEBHOOK_SECRET = "whsec_AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcY";
+// Same value as PolicyDesk's e2e/website-client.ts (whsec_ + base64 of the bytes 0..23); the fake signs its webhooks with it.
+const PAYSANDBOX_WEBHOOK_SECRET = "whsec_AAECAwQFBgcICQoLDA0ODxAREhMUFRYX";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -34,7 +33,7 @@ export default defineConfig({
       // PolicyDesk's fake PaySandbox: checkout sessions, a hosted checkout page with Pay buttons, signed webhooks.
       command: "node e2e/fake-paysandbox.mjs",
       cwd: POLICYDESK_DIR,
-      port: PAYSANDBOX_PORT,
+      url: `http://localhost:${PAYSANDBOX_PORT}/health`,
       env: { E2E_PORT: String(POLICYDESK_PORT), PAYSANDBOX_WEBHOOK_SECRET },
       reuseExistingServer: !process.env.CI,
       timeout: 30_000,
