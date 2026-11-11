@@ -43,7 +43,7 @@ test("call me back → received page shows a coordinator", async ({ page }) => {
   await expectCoordinatorInHeader(page);
 });
 
-test("get prices now → received page shows CAR- reference and a coordinator", async ({ page }) => {
+test("get prices now → plans page shows CAR- reference and a coordinator", async ({ page }) => {
   await page.goto("/car");
   await page.getByRole("link", { name: /Get prices now/ }).click();
   await expect(page).toHaveURL("/car/details");
@@ -61,10 +61,10 @@ test("get prices now → received page shows CAR- reference and a coordinator", 
   await page.getByLabel("Mobile number").fill("3217654321");
   await page.getByRole("button", { name: "Get prices" }).click();
 
-  await expect(page).toHaveURL("/car/received", { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: "Request received" })).toBeVisible();
+  // The full form creates a lead, so the visitor goes straight on to the plans (step 2).
+  await expect(page).toHaveURL("/car/plans", { timeout: 30_000 });
+  await expect(page.getByRole("heading", { name: "Choose your plan" })).toBeVisible();
   await expect(page.getByText(/^CAR-[A-Z2-9]{7}$/)).toBeVisible();
-  await expect(page.getByText(/Plans are coming in the next release/)).toBeVisible();
   await expectCoordinatorInHeader(page);
 });
 

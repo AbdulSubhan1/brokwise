@@ -5,7 +5,7 @@ only **car** is built today. It is a demo merchant for PaySandbox (a fake paymen
 PolicyDesk (an insurance CRM) as its back office. All people, insurers and numbers are made up.
 
 Pages in this folder:
-- this overview: what Brokwise is, the three systems, the journeys and what step 1 ships;
+- this overview: what Brokwise is, the three systems, the journeys and what steps 1 and 2 ship;
 - [future-scope.md](future-scope.md): what is planned later and what triggers it.
 
 The full design is in [`docs/superpowers/specs/2026-11-11-brokwise-design.md`](../superpowers/specs/2026-11-11-brokwise-design.md).
@@ -24,7 +24,7 @@ flowchart LR
 
 | System | Owns |
 | --- | --- |
-| **Brokwise website** (this repo) | Marketing and journey pages, forms, and later the plans, payment and thank-you pages. Stores nothing except a signed journey cookie. |
+| **Brokwise website** (this repo) | Marketing and journey pages, forms, the plans page, and later the payment and thank-you pages. Stores nothing except a signed journey cookie. |
 | **PolicyDesk** | All data: opportunities, leads, plans, orders, payments, automatic assignment and the audit timeline. The private website API. The only holder of the PaySandbox key. |
 | **PaySandbox** | Checkout sessions, hosted checkout, payment events and webhooks. |
 
@@ -42,8 +42,10 @@ The code is in `src/lib/signature.ts` (signing) and `src/lib/policydesk.ts` (the
 **A. Self-serve ("Get prices now")**
 1. The visitor fills the full form (car, driver, contact). PolicyDesk creates the opportunity and the
    lead together and assigns a coordinator automatically.
-2. Later steps: plans with add-ons, a payment page through PaySandbox, and a thank-you page with the
-   advisor assigned after payment.
+2. The visitor goes straight on to the car plans, ticks add-ons and picks one. PolicyDesk prices the
+   choice and saves it on the lead as a quote (step 2).
+3. Later steps: a payment page through PaySandbox, and a thank-you page with the advisor assigned
+   after payment.
 
 **B. Assisted ("Call me back")**
 1. The visitor fills the short form (name, mobile, email, car make, model, year). PolicyDesk creates the
@@ -76,3 +78,37 @@ and PolicyDesk is not called.
 **Automatic assignment** happens in PolicyDesk: among active and available coordinators in the car
 department, the one with the fewest open records; ties go to the one assigned longest ago. When nobody
 is available, the website shows the Brokwise help desk instead of a person.
+
+## What step 2 ships
+
+| Page | What it does |
+| --- | --- |
+| `/car/details` | After the full form, the visitor goes to `/car/plans` (it used to be `/car/received`). |
+| `/car/plans` | "Choose your plan": the car plans, cheapest first, with a cover filter (All · Third party · Comprehensive · Agency repair, as `?cover=`). Each card shows the insurer, plan, cover, excess, benefits, add-ons and a live total, and a "Select this plan" button. |
+| `/car/selected` | The saved choice: plan line, each add-on ("Included" or its price), the total, the quote reference and "Change plan". Payment comes in the next release. |
+| `/car/received` | For a full-form journey it now links to the plans. |
+
+**Add-ons.** Each plan has its own add-ons, of three kinds:
+- *included*: always on, shown with a tick and "Included", no price;
+- *optional*: a checkbox, unticked at first, with its price (`+$35`);
+- *pre-ticked*: a checkbox, ticked at first; the visitor may untick it.
+
+The card total is the plan price plus every ticked add-on. It is for display only: the form sends just
+the plan id and the ticked add-on ids, and **PolicyDesk works out the price itself**. Prices are yearly,
+in whole US dollars (`$1,234`), with no tax line.
+
+**One choice per journey.** Picking again (via "Change plan") updates the same quote in PolicyDesk, so
+the quote reference stays the same. When the visitor comes back to `/car/plans`, the saved plan is
+marked "Your choice" and its add-ons are ticked again.
+
+**Who sees plans.** Only full-form journeys have a lead, so only they see plans. A short-form journey
+that opens `/car/plans` goes to `/car/received` (PolicyDesk answers `409 no_lead`). No or a forged
+cookie goes to `/car`, as before.
+
+**Errors.** If a plan or add-on changed since the page was drawn (PolicyDesk answers 400), the plans
+page shows "That choice is no longer available. Please pick again." If PolicyDesk can't be reached, it
+shows "We couldn't save your choice. Please try again."
+
+**API calls** (signed as in step 1): `GET /opportunities/{publicId}/plans` and
+`PUT /opportunities/{publicId}/selection` with `{ planId, addOnIds }`. `GET /opportunities/{publicId}`
+now also returns the saved `selection`.

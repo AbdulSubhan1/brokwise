@@ -57,11 +57,16 @@ async function Received() {
           <h2 id="next" className="text-lg font-bold">
             What happens next
           </h2>
-          <p className="mt-2 text-muted">
-            {view.lead
-              ? "Plans are coming in the next release — your coordinator will call you meanwhile."
-              : "Your coordinator will call you."}
-          </p>
+          {view.lead ? (
+            <p className="mt-2 text-muted">
+              Your plans are ready.{" "}
+              <Link href="/car/plans" className="font-semibold text-pine underline underline-offset-2">
+                See your plans
+              </Link>
+            </p>
+          ) : (
+            <p className="mt-2 text-muted">Your coordinator will call you.</p>
+          )}
           <p className="mt-4 text-sm text-muted">
             {view.contact
               ? `${view.contact.name} is looking after your request. Their details are at the top of the page.`

@@ -1,9 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { errorsByField, type FormState, SEND_FAILED } from "@/lib/form-state";
-import { setJourney } from "@/lib/journey";
-import { createOpportunity } from "@/lib/policydesk";
+import { readJourney, setJourney } from "@/lib/journey";
+import { createOpportunity, saveSelection } from "@/lib/policydesk";
 import { formFieldOf, FULL_FIELDS, fullFormSchema, QUICK_FIELDS, quickFormSchema, REQUIRED } from "@/lib/schemas";
 
 // PolicyDesk's field messages are its own message keys; these are the ones worth showing as they are.
@@ -45,5 +46,27 @@ async function send(form: "short" | "full", formData: FormData): Promise<FormSta
   }
 
   await setJourney(result.view.opportunity.publicId);
-  redirect("/car/received");
+  // The full form creates a lead, so the visitor goes straight on to the plans; the short form waits for a call.
+  redirect(form === "full" ? "/car/plans" : "/car/received");
+}
+
+const selectionSchema = z.object({
+  planId: z.coerce.number().int().positive(),
+  addOnIds: z.array(z.coerce.number().int().positive()).max(20),
+});
+
+/** Saves the plan card's choice. Only the plan id and ticked add-on ids go to PolicyDesk, which prices it. */
+export async function selectPlan(formData: FormData): Promise<void> {
+  const publicId = await readJourney();
+  if (!publicId) redirect("/car");
+
+  const parsed = selectionSchema.safeParse({ planId: formData.get("planId"), addOnIds: formData.getAll("addOnIds") });
+  if (!parsed.success) redirect("/car/plans?error=unavailable");
+
+  const result = await saveSelection(publicId, parsed.data);
+  if (result.ok) redirect("/car/selected");
+  if (result.status === 409 && result.error.code === "no_lead") redirect("/car/received");
+  if (result.status === 404) redirect("/car");
+  // 400: the plan or an add-on changed since the page was drawn; anything else is PolicyDesk being unreachable.
+  redirect(result.status === 400 ? "/car/plans?error=unavailable" : "/car/plans?error=failed");
 }
