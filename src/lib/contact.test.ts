@@ -4,6 +4,7 @@ import { contactOf, HELP_DESK } from "./contact";
 const view = {
   opportunity: { publicId: "8d0f7c1e-2a4b-4c3d-9e8f-0a1b2c3d4e5f", status: "new" as const, product: "car" },
   lead: null,
+  selection: null,
 };
 
 describe("contactOf", () => {

@@ -29,6 +29,43 @@ export type OpportunityRequest = {
   details: CarDetails;
 };
 
+export const ADD_ON_KINDS = ["included", "optional", "preselected"] as const;
+export type AddOnKind = (typeof ADD_ON_KINDS)[number];
+
+const addOnKind = z.enum(ADD_ON_KINDS);
+
+const planSchema = z.object({
+  id: z.number().int(),
+  insurer: z.string(),
+  name: z.string(),
+  cover: z.string(),
+  coverLabel: z.string(),
+  excess: z.number(),
+  basePremium: z.number(),
+  benefits: z.array(z.string()),
+  addOns: z.array(
+    z.object({ id: z.number().int(), key: z.string(), name: z.string(), kind: addOnKind, price: z.number() }),
+  ),
+});
+
+/** Mirrors PolicyDesk's WebsitePlan: one car plan card, prices in whole US dollars. */
+export type WebsitePlan = z.infer<typeof planSchema>;
+
+const selectionSchema = z.object({
+  quoteReference: z.string(),
+  planId: z.number().int(),
+  insurer: z.string(),
+  planName: z.string(),
+  cover: z.string(),
+  coverLabel: z.string(),
+  lines: z.array(z.object({ label: z.string(), kind: z.union([z.literal("plan"), addOnKind]), amount: z.number() })),
+  total: z.number(),
+  addOnIds: z.array(z.number().int()),
+});
+
+/** Mirrors PolicyDesk's WebsiteSelection: the saved choice, priced by PolicyDesk. */
+export type WebsiteSelection = z.infer<typeof selectionSchema>;
+
 const viewSchema = z.object({
   opportunity: z.object({
     publicId: z.string(),
@@ -39,6 +76,8 @@ const viewSchema = z.object({
   contact: z
     .object({ role: z.literal("coordinator"), name: z.string(), email: z.string(), phone: z.string() })
     .nullable(),
+  // Older PolicyDesk builds leave it out; treat that as "nothing chosen yet".
+  selection: selectionSchema.nullable().default(null),
 });
 
 /** Mirrors PolicyDesk's WebsiteOpportunityView. */
@@ -54,7 +93,7 @@ const errorSchema = z.object({
 
 const UNAVAILABLE: CreateResult = { ok: false, status: 502, error: { code: "unavailable" } };
 
-async function call(method: "GET" | "POST", path: string, body?: unknown): Promise<Response> {
+async function call(method: "GET" | "POST" | "PUT", path: string, body?: unknown): Promise<Response> {
   const env = getEnv();
   const url = new URL(`${BASE_PATH}${path}`, env.POLICYDESK_API_URL);
   const raw = body === undefined ? "" : JSON.stringify(body);
@@ -97,4 +136,55 @@ export async function getOpportunity(publicId: string): Promise<OpportunityView 
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`PolicyDesk answered ${res.status} for an opportunity read`);
   return viewSchema.parse(await res.json());
+}
+
+export type PlansResult = { ok: true; plans: WebsitePlan[] } | { ok: false; status: number; code: string };
+
+const plansSchema = z.object({ plans: z.array(planSchema) });
+
+/** The car plans for a journey, cheapest first. 409 `no_lead` when the journey has no lead (short form). */
+export async function getPlans(publicId: string): Promise<PlansResult> {
+  let res: Response;
+  let json: unknown;
+  try {
+    res = await call("GET", `/opportunities/${encodeURIComponent(publicId)}/plans`);
+    json = await res.json();
+  } catch {
+    return { ok: false, status: 502, code: "unavailable" };
+  }
+  if (res.ok) {
+    const parsed = plansSchema.safeParse(json);
+    return parsed.success ? { ok: true, plans: parsed.data.plans } : { ok: false, status: 502, code: "unavailable" };
+  }
+  const err = errorSchema.safeParse(json);
+  return { ok: false, status: res.status, code: err.success ? err.data.error.code : "unknown" };
+}
+
+export type SelectionRequest = { planId: number; addOnIds: number[] };
+
+export type SelectionResult = { ok: true; selection: WebsiteSelection } | { ok: false; status: number; error: ApiError };
+
+const selectionResponseSchema = z.object({ selection: selectionSchema });
+
+/** Saves the visitor's plan and ticked add-ons. Only ids go out: PolicyDesk prices the choice itself. */
+export async function saveSelection(publicId: string, input: SelectionRequest): Promise<SelectionResult> {
+  let res: Response;
+  let json: unknown;
+  try {
+    res = await call("PUT", `/opportunities/${encodeURIComponent(publicId)}/selection`, {
+      planId: input.planId,
+      addOnIds: input.addOnIds,
+    });
+    json = await res.json();
+  } catch {
+    return { ok: false, status: 502, error: { code: "unavailable" } };
+  }
+  if (res.ok) {
+    const parsed = selectionResponseSchema.safeParse(json);
+    return parsed.success
+      ? { ok: true, selection: parsed.data.selection }
+      : { ok: false, status: 502, error: { code: "unavailable" } };
+  }
+  const err = errorSchema.safeParse(json);
+  return { ok: false, status: res.status, error: err.success ? err.data.error : { code: "unknown" } };
 }
