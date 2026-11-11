@@ -5,7 +5,7 @@ only **car** is built today. It is a demo merchant for PaySandbox (a fake paymen
 PolicyDesk (an insurance CRM) as its back office. All people, insurers and numbers are made up.
 
 Pages in this folder:
-- this overview: what Brokwise is, the three systems, the journeys and what steps 1 and 2 ship;
+- this overview: what Brokwise is, the three systems, the journeys and what steps 1 to 3 ship;
 - [future-scope.md](future-scope.md): what is planned later and what triggers it.
 
 The full design is in [`docs/superpowers/specs/2026-11-11-brokwise-design.md`](../superpowers/specs/2026-11-11-brokwise-design.md).
@@ -24,7 +24,7 @@ flowchart LR
 
 | System | Owns |
 | --- | --- |
-| **Brokwise website** (this repo) | Marketing and journey pages, forms, the plans page, and later the payment and thank-you pages. Stores nothing except a signed journey cookie. |
+| **Brokwise website** (this repo) | Marketing and journey pages, forms, the plans page, the payment page and the thank-you page. Stores nothing except a signed journey cookie. Never talks to PaySandbox's API. |
 | **PolicyDesk** | All data: opportunities, leads, plans, orders, payments, automatic assignment and the audit timeline. The private website API. The only holder of the PaySandbox key. |
 | **PaySandbox** | Checkout sessions, hosted checkout, payment events and webhooks. |
 
@@ -44,8 +44,9 @@ The code is in `src/lib/signature.ts` (signing) and `src/lib/policydesk.ts` (the
    lead together and assigns a coordinator automatically.
 2. The visitor goes straight on to the car plans, ticks add-ons and picks one. PolicyDesk prices the
    choice and saves it on the lead as a quote (step 2).
-3. Later steps: a payment page through PaySandbox, and a thank-you page with the advisor assigned
-   after payment.
+3. The visitor pays on PaySandbox's hosted checkout (step 3). PaySandbox tells PolicyDesk by a signed
+   webhook; PolicyDesk marks the order paid, accepts the quote and assigns an advisor automatically.
+4. The thank-you page shows the paid order and the advisor.
 
 **B. Assisted ("Call me back")**
 1. The visitor fills the short form (name, mobile, email, car make, model, year). PolicyDesk creates the
@@ -112,3 +113,50 @@ shows "We couldn't save your choice. Please try again."
 **API calls** (signed as in step 1): `GET /opportunities/{publicId}/plans` and
 `PUT /opportunities/{publicId}/selection` with `{ planId, addOnIds }`. `GET /opportunities/{publicId}`
 now also returns the saved `selection`.
+
+## What step 3 ships
+
+| Page | What it does |
+| --- | --- |
+| `/car/selected` | Now has a "Continue to payment" button (the "payment opens in the next release" note is gone). |
+| `/car/payment` | "Payment": the quote reference, each line ("Included" for a $0 included add-on) and the total, the demo notice, a required box "I agree to the terms and confirm my details are made up for this demo." and the button "Pay $1,200 with PaySandbox" (the real total), with the note "You'll pay on PaySandbox's test checkout. Use test card 4242 4242 4242 4242." |
+| `/car/thank-you` | Paid: "Payment received", the lines and total paid, the date paid, the PaySandbox payment id (`pay_…`), "A receipt goes to" the masked email, and next steps with the advisor's name. The header card shows **the advisor** ("Your advisor"), or the help desk when no advisor was free. Not confirmed yet: "Confirming your payment…" (see below). |
+
+**Pay.** The button runs a server action that asks PolicyDesk to start the payment
+(`POST /opportunities/{publicId}/payment`, empty body). PolicyDesk prices the saved choice, creates the
+PaySandbox checkout session (or reuses an open one for the same total) and returns its URL; the website
+redirects the browser there. PaySandbox sends the visitor back to `/car/thank-you` when paid, or to
+`/car/payment` when they cancel. The website never sees card details or PaySandbox keys.
+
+**Where each page sends you.**
+
+| Situation | `/car/payment` | `/car/thank-you` |
+| --- | --- | --- |
+| No or forged cookie | `/car` | `/car` |
+| Short-form journey (`409 no_lead`) | `/car/received` | `/car/received` |
+| No plan picked yet (`409 no_selection`) | `/car/plans` | — |
+| Already paid | `/car/thank-you` | shows the paid order |
+| Not paid, no order yet | shows the payment page | `/car/payment` |
+
+Pressing Pay for an order that was paid meanwhile (`409 already_paid`) also goes to `/car/thank-you`.
+
+**Late webhook.** If the visitor is back before PaySandbox's webhook reaches PolicyDesk, the order is
+still `pending`. The thank-you page then shows "Confirming your payment…" and reloads its data every
+3 seconds for up to 30 seconds; each read makes PolicyDesk ask PaySandbox about the checkout session and
+mark the order paid if it is. After 30 seconds it says "This is taking longer than usual. Your
+coordinator will confirm by email." While pending, the header still shows the coordinator.
+
+**Errors.** If PolicyDesk has payments switched off (`503 payments_disabled`), PaySandbox is down
+(`502 paysandbox_unavailable`) or PolicyDesk can't be reached, the payment page shows "Payments are
+unavailable right now. Please try again later." Without the terms box ticked it shows "Tick the box to
+agree to the terms before you pay." under the box. If a page can't load its data it shows a "Try again"
+page.
+
+**API calls** (signed as in step 1): `GET /opportunities/{publicId}/payment` (lines, total, quote
+reference, `ready` or `already_paid`), `POST /opportunities/{publicId}/payment` (`{ checkoutUrl }`) and
+`GET /opportunities/{publicId}/order` (the latest order with masked email and phone, and the advisor).
+The pay-link routes from the design (`/payments/{publicIdOrPayToken}`) come with the assisted flow in step 4.
+
+**Tests.** Unit: the header card shows "Your advisor" for an advisor. E2E (`e2e/payment.spec.ts`) runs
+against local PolicyDesk and PolicyDesk's fake PaySandbox (`e2e/fake-paysandbox.mjs` there, port 3072),
+whose checkout page has "Pay" and "Pay without webhook" buttons.
