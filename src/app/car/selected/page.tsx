@@ -81,16 +81,20 @@ async function Selected() {
           </dl>
         </section>
 
-        <p className="rounded-lg border border-line bg-pine-soft px-4 py-3">
-          Payment opens in the next release. Your coordinator can help meanwhile.
-        </p>
-
-        <Link
-          href="/car/plans"
-          className="w-fit rounded-lg border border-pine px-5 py-3 font-semibold text-pine hover:bg-pine-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
-        >
-          Change plan
-        </Link>
+        <div className="flex flex-col gap-3 md:flex-row">
+          <Link
+            href="/car/payment"
+            className="rounded-lg bg-pine px-5 py-3 text-center font-semibold text-white hover:bg-pine-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
+          >
+            Continue to payment
+          </Link>
+          <Link
+            href="/car/plans"
+            className="rounded-lg border border-pine px-5 py-3 text-center font-semibold text-pine hover:bg-pine-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
+          >
+            Change plan
+          </Link>
+        </div>
       </main>
     </>
   );

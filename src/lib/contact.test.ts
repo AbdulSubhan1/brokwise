@@ -22,6 +22,19 @@ describe("contactOf", () => {
     });
   });
 
+  it("shows the advisor assigned after payment", () => {
+    const person = contactOf({
+      contact: { role: "advisor", name: "Omar Advisor", email: "omar@policydesk.dev", phone: "+923001110006" },
+    });
+    expect(person).toEqual({
+      badge: "Your advisor",
+      name: "Omar Advisor",
+      role: "Advisor",
+      email: "omar@policydesk.dev",
+      phone: "+923001110006",
+    });
+  });
+
   it("shows the help desk when nobody is available", () => {
     expect(contactOf({ ...view, contact: null })).toEqual(HELP_DESK);
     expect(HELP_DESK).toMatchObject({

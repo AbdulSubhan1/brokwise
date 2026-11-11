@@ -66,6 +66,11 @@ const selectionSchema = z.object({
 /** Mirrors PolicyDesk's WebsiteSelection: the saved choice, priced by PolicyDesk. */
 export type WebsiteSelection = z.infer<typeof selectionSchema>;
 
+const personSchema = z.object({ name: z.string(), email: z.string(), phone: z.string() });
+
+/** A person PolicyDesk assigned: the coordinator before payment, the advisor after it. */
+export type Contact = z.infer<typeof personSchema> & { role: "coordinator" | "advisor" };
+
 const viewSchema = z.object({
   opportunity: z.object({
     publicId: z.string(),
@@ -73,9 +78,7 @@ const viewSchema = z.object({
     product: z.string(),
   }),
   lead: z.object({ reference: z.string() }).nullable(),
-  contact: z
-    .object({ role: z.literal("coordinator"), name: z.string(), email: z.string(), phone: z.string() })
-    .nullable(),
+  contact: personSchema.extend({ role: z.literal("coordinator") }).nullable(),
   // Older PolicyDesk builds leave it out; treat that as "nothing chosen yet".
   selection: selectionSchema.nullable().default(null),
 });
@@ -187,4 +190,83 @@ export async function saveSelection(publicId: string, input: SelectionRequest): 
   }
   const err = errorSchema.safeParse(json);
   return { ok: false, status: res.status, error: err.success ? err.data.error : { code: "unknown" } };
+}
+
+/** What a step-3 call gives back: the parsed body, or the HTTP status and PolicyDesk's error code (502 `unavailable` when unreachable). */
+export type Result<T> = { ok: true; data: T } | { ok: false; status: number; code: string };
+
+async function request<T>(method: "GET" | "POST", path: string, schema: z.ZodType<T>, body?: unknown): Promise<Result<T>> {
+  let res: Response;
+  let json: unknown;
+  try {
+    res = await call(method, path, body);
+    json = await res.json();
+  } catch {
+    return { ok: false, status: 502, code: "unavailable" };
+  }
+  if (res.ok) {
+    const parsed = schema.safeParse(json);
+    return parsed.success ? { ok: true, data: parsed.data } : { ok: false, status: 502, code: "unavailable" };
+  }
+  const err = errorSchema.safeParse(json);
+  return { ok: false, status: res.status, code: err.success ? err.data.error.code : "unknown" };
+}
+
+const lineSchema = z.object({ label: z.string(), amount: z.number() });
+
+const paymentSummarySchema = z.object({
+  status: z.enum(["ready", "already_paid"]),
+  lines: z.array(lineSchema),
+  total: z.number(),
+  quoteReference: z.string(),
+});
+
+/** Mirrors PolicyDesk's payment summary: what the visitor is about to pay, in whole US dollars. */
+export type PaymentSummary = z.infer<typeof paymentSummarySchema>;
+
+/** The saved choice as payment lines and total. 409 `no_lead` (short form) or `no_selection` (no plan picked yet). */
+export async function getPaymentSummary(publicId: string): Promise<Result<PaymentSummary>> {
+  const result = await request(
+    "GET",
+    `/opportunities/${encodeURIComponent(publicId)}/payment`,
+    z.object({ payment: paymentSummarySchema }),
+  );
+  return result.ok ? { ok: true, data: result.data.payment } : result;
+}
+
+/**
+ * Asks PolicyDesk for a PaySandbox checkout for the saved choice and returns its URL. PolicyDesk reuses an open
+ * session for the same total. 409 `already_paid` / `no_selection`, 503 `payments_disabled`, 502 `paysandbox_unavailable`.
+ */
+export async function startPayment(publicId: string): Promise<Result<{ checkoutUrl: string }>> {
+  return request(
+    "POST",
+    `/opportunities/${encodeURIComponent(publicId)}/payment`,
+    z.object({ checkoutUrl: z.url({ protocol: /^https?$/ }) }),
+    {},
+  );
+}
+
+const orderSchema = z.object({
+  status: z.enum(["pending", "paid"]),
+  lines: z.array(lineSchema),
+  total: z.number(),
+  paidAt: z.string().nullable(),
+  paymentId: z.string().nullable(),
+  quoteReference: z.string(),
+  emailMasked: z.string(),
+  phoneMasked: z.string(),
+});
+
+const orderViewSchema = z.object({
+  order: orderSchema.nullable(),
+  advisor: personSchema.extend({ role: z.literal("advisor") }).nullable(),
+});
+
+/** Mirrors PolicyDesk's order view: the journey's latest order (null before Pay) and the advisor assigned after payment. */
+export type OrderView = z.infer<typeof orderViewSchema>;
+
+/** The latest order. While it is pending, PolicyDesk re-checks the PaySandbox session first, in case the webhook is late. */
+export async function getOrder(publicId: string): Promise<Result<OrderView>> {
+  return request("GET", `/opportunities/${encodeURIComponent(publicId)}/order`, orderViewSchema);
 }

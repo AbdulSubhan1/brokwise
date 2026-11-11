@@ -1,37 +1,8 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
+import { dollars, fillFullForm, usd } from "./helpers";
 
 // Plans come from PolicyDesk's seeded made-up car plans, so these tests find cards by what they offer
 // (an unticked or a pre-ticked add-on) instead of by insurer or plan name.
-
-/** "$1,234" or "+$30" → 1234 / 30. */
-function dollars(text: string | null): number {
-  return Number((text ?? "").replace(/[^\d]/g, ""));
-}
-
-/** 1234 → "$1,234", as the cards show it. */
-function usd(n: number): string {
-  return `$${n.toLocaleString("en-US")}`;
-}
-
-async function fillFullForm(page: Page) {
-  await page.goto("/car/details");
-  await page.getByLabel("Car make").selectOption("Toyota");
-  await page.getByLabel("Car model").selectOption("Corolla");
-  await page.getByLabel("Model year").selectOption("2021");
-  await page.getByRole("radio", { name: "Yes" }).check();
-  await page.getByLabel("Car value (USD)").fill("17000");
-  await page.getByLabel("Full name").fill("Bilal Ahmed");
-  await page.getByLabel("Date of birth").fill("1990-03-21");
-  await page.getByLabel("Nationality").fill("Pakistani");
-  await page.getByLabel("City").fill("Lahore");
-  await page.getByLabel("Years with a driving licence").fill("8");
-  await page.getByLabel("Email").fill("bilal.ahmed@example.test");
-  await page.getByLabel("Mobile number").fill("3331234567");
-  await page.getByRole("button", { name: "Get prices" }).click();
-  await expect(page).toHaveURL("/car/plans", { timeout: 30_000 });
-  // The URL changes before the plans stream in, so wait for the cards before looking at the page
-  await expect(page.getByRole("article").first()).toBeVisible({ timeout: 30_000 });
-}
 
 function cards(page: Page): Locator {
   return page.getByRole("article");
@@ -106,7 +77,10 @@ test("pick a plan with an optional add-on → selected page shows the same total
   await card.getByRole("button", { name: "Select this plan" }).click();
   expect(await selectedTotal(page)).toBe(total);
   await expect(page.getByTestId("quote-reference")).toHaveText(/^CAR-[A-Z2-9]{7}-Q\d+$/);
-  await expect(page.getByText("Payment opens in the next release. Your coordinator can help meanwhile.")).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Continue to payment" })).toHaveAttribute(
+    "href",
+    "/car/payment",
+  );
 });
 
 test("untick a pre-ticked add-on → total drops by its price", async ({ page }) => {
