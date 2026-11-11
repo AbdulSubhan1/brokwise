@@ -1,8 +1,7 @@
 "use client";
 
 import { type FocusEvent, useId, useRef, useState } from "react";
-
-export type ContactPerson = { badge: string; name: string; role?: string; email: string; phone: string };
+import type { ContactPerson } from "@/lib/contact";
 
 /** Header badge with an initial avatar; a card with the person's details opens on hover, keyboard focus or tap. */
 export function ContactCard({ person }: { person: ContactPerson }) {

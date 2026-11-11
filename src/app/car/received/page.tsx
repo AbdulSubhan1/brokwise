@@ -2,19 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { ContactCard, type ContactPerson } from "@/components/contact-card";
+import { ContactCard } from "@/components/contact-card";
+import { contactOf } from "@/lib/contact";
 import { SiteHeader } from "@/components/site-header";
 import { readJourney } from "@/lib/journey";
-import { getOpportunity, type OpportunityView } from "@/lib/policydesk";
+import { getOpportunity } from "@/lib/policydesk";
 
 export const metadata: Metadata = { title: "Request received", robots: { index: false } };
-
-const HELP_DESK: ContactPerson = {
-  badge: "Help desk",
-  name: "Brokwise help desk",
-  email: "help@brokwise.test",
-  phone: "+92 300 0000000",
-};
 
 export default function ReceivedPage() {
   return (
@@ -81,15 +75,4 @@ async function Received() {
       </main>
     </>
   );
-}
-
-function contactOf(view: OpportunityView): ContactPerson {
-  if (!view.contact) return HELP_DESK;
-  return {
-    badge: "Your coordinator",
-    name: view.contact.name,
-    role: "Coordinator",
-    email: view.contact.email,
-    phone: view.contact.phone,
-  };
 }
