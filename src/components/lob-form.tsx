@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { sendFullForm, sendQuickForm } from "@/app/[lob]/actions";
-import type { FormState } from "@/lib/form-state";
+import { errorKeyOf, errorsLeft, type FormState } from "@/lib/form-state";
 import { type FieldSpec, type FormKind, formSections, getLob, labelsOf } from "@/lobs";
 import { CarFields } from "./car-fields";
 import { MobileField } from "./contact-fields";
@@ -20,7 +20,8 @@ const SUMMARY_GOAL = { short: "send your request", full: "see your prices" } as 
  * The quick ("Call me back") or full ("Get prices now") form of a line of business, drawn from its config. Fields with
  * `showWhen` appear only while the choice they depend on has one of the given values; a hidden field is not sent.
  * `turnstileSiteKey` is set only when Turnstile is on; then the form shows the check above its errors. After a send
- * with field mistakes, an error summary at the top lists them as links and takes focus.
+ * with field mistakes, an error summary at the top lists them as links and takes focus. A field's mistake (and its
+ * line in the summary) goes away as soon as the visitor changes that field; the next send checks everything again.
  */
 export function LobForm({
   slug,
@@ -32,7 +33,16 @@ export function LobForm({
   turnstileSiteKey: string | null;
 }) {
   const lob = getLob(slug)!;
-  const { state, action, pending, onSubmit } = useFormAction(ACTIONS[form]);
+  const { state: sent, action, pending, onSubmit } = useFormAction(ACTIONS[form]);
+  // Fields changed since the last send, tied to that send's state so a new answer starts with none
+  const [edited, setEdited] = useState<{ after: FormState; names: string[] }>({ after: sent, names: [] });
+  const editedNames = edited.after === sent ? edited.names : [];
+  const state: FormState = { ...sent, errors: errorsLeft(sent.errors, editedNames) };
+  function onFieldChange(e: FormEvent<HTMLFormElement>) {
+    const name = (e.target as HTMLInputElement).name;
+    if (!name || !sent.errors[errorKeyOf(name)] || editedNames.includes(errorKeyOf(name))) return;
+    setEdited({ after: sent, names: [...editedNames, errorKeyOf(name)] });
+  }
   const [choices, setChoices] = useState<Record<string, string>>({});
   const choiceOf = (name: string) => choices[name] ?? state.values[name] ?? "";
   const setChoice = (name: string, value: string) => setChoices((c) => ({ ...c, [name]: value }));
@@ -51,11 +61,11 @@ export function LobForm({
   const summaryRef = useRef<HTMLDivElement>(null);
   // Each failed send returns a new state: move focus to the summary so the visitor hears and sees what to fix.
   useEffect(() => {
-    if (Object.keys(state.errors).length > 0) summaryRef.current?.focus();
-  }, [state]);
+    if (Object.keys(sent.errors).length > 0) summaryRef.current?.focus();
+  }, [sent]);
 
   return (
-    <form action={action} onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+    <form action={action} onSubmit={onSubmit} onChange={onFieldChange} noValidate className="flex flex-col gap-6">
       <input type="hidden" name="lob" value={lob.slug} />
       <ErrorSummary
         ref={summaryRef}
