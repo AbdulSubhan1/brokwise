@@ -117,7 +117,7 @@ test.describe.serial("assisted journey", () => {
     const opportunityUrl = new URL(pd.url()).pathname;
     const main = pd.getByRole("main");
 
-    await main.getByLabel("GCC spec").check();
+    await pick(pd, "GCC spec", "Yes");
     await main.getByLabel("Car value").fill("17000");
     await pickDate(pd, "Date of birth", "1990-03-21");
     await main.getByLabel("Nationality").fill("Pakistani");
