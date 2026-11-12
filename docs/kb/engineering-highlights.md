@@ -98,6 +98,18 @@ below says the decision, why it matters in a real broker, and where it lives and
 - **Guardrails respected:** changes go through worktrees and pull requests; protected `main` is
   never edited directly, and git hooks are never skipped.
 
+## Monitoring (Pulse)
+
+Brokwise reports to [Pulse](https://github.com/AbdulSubhan1/monitor), my small monitor for all my live projects.
+
+| What | Detail | Where |
+| --- | --- | --- |
+| **Page views and browser errors** | One `next/script` tag (`afterInteractive`): cookie-free, no ids, paths without query strings. | `src/app/layout.tsx` |
+| **Named events** | `callback_requested` on the request-received page, `payment_succeeded` on the paid thank-you page. An event fired before the beacon loads waits in its queue. | `src/components/pulse-event.tsx` |
+| **Every server error** | Next.js `onRequestError` sends the error, route and digest with no code in each route. | `src/instrumentation.ts` |
+| **A key log per lead** | "Lead submitted" with product and form, sent with `after()` so the visitor never waits. | `src/app/[lob]/actions.ts` |
+| **Can't break the site** | Off until `MONITOR_LOG_TOKEN` is set; 2-second timeout; every failure ignored. The token is this site's own, so it can't write logs as another project. | `src/lib/pulse.ts`, `pulse.test.ts` |
+
 ## Numbers (end of step 5)
 
 | | Unit tests | End-to-end tests |
