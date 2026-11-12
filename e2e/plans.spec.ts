@@ -1,16 +1,17 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { dollars, fillFullForm, SELECT_PLAN, usd } from "./helpers";
 
-// Plans come from PolicyDesk's seeded made-up car plans, so these tests find cards by what they offer
-// (an unticked or a pre-ticked add-on) instead of by insurer or plan name.
+// Plans come from PolicyDesk's seeded made-up car plans, so these tests find plan rows by what they offer
+// (an unticked or a pre-ticked add-on) instead of by insurer or plan name. Each plan is an article; the page shows the
+// first six and a "Show N more plans" button.
 
 function cards(page: Page): Locator {
   return page.getByRole("article");
 }
 
-/** Opens a card's collapsible "Add-ons (n)" list, if it has one and it is closed. */
+/** Opens a row's collapsed extras ("Add extras · n available"), if it has some and they are closed. */
 async function showAddOns(card: Locator) {
-  const toggle = card.getByRole("button", { name: /^Add-ons \(\d+\)/ });
+  const toggle = card.getByRole("button", { name: /^Add extras · \d+ available/ });
   if ((await toggle.count()) > 0 && (await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
 }
 
@@ -48,8 +49,9 @@ async function selectedTotal(page: Page): Promise<number> {
 
 test("full form → plans page lists plans cheapest first", async ({ page }) => {
   await fillFullForm(page);
-  await expect(page.getByRole("heading", { name: "Choose your plan" })).toBeVisible();
-  await expect(page.getByText("Prices are yearly, in US dollars.")).toBeVisible();
+  await expect(page).toHaveTitle(/Choose your plan/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^\d+ plans for your Corolla$/);
+  await expect(page.getByText("Yearly prices in US dollars.")).toBeVisible();
   // Next keeps the previous page hidden in the DOM for back navigation, so look only in the visible main
   await expect(
     page.getByRole("main").getByText("Demo site: use made-up details. Payments are in PaySandbox test mode."),
@@ -57,8 +59,10 @@ test("full form → plans page lists plans cheapest first", async ({ page }) => 
   await expect(page.getByRole("button", { name: "Your coordinator" })).toBeVisible();
 
   await expect(cards(page).first()).toBeVisible();
-  const prices = (await page.getByTestId("plan-price").allTextContents()).map(dollars);
+  // "Lowest price" orders by the price each row shows (the plan with its pre-ticked extras).
+  const prices = (await page.getByTestId("plan-total").allTextContents()).map(dollars);
   expect(prices.length).toBeGreaterThan(1);
+  expect(prices.length).toBeLessThanOrEqual(6);
   expect(prices).toEqual([...prices].sort((a, b) => a - b));
 
   // Every card has its button, each named after its own plan and price.
@@ -68,13 +72,142 @@ test("full form → plans page lists plans cheapest first", async ({ page }) => 
   expect(new Set(names).size).toBe(names.length);
   await expect(selects.first()).toHaveText("Select");
 
-  // The cover filter narrows the list to one kind of cover.
-  await page.getByRole("link", { name: "Third party", exact: true }).click();
+  // The cover filter narrows the list to one kind of cover; each tab says how many plans it has.
+  const filter = page.getByRole("navigation", { name: "Filter by cover" });
+  const all = dollars(await filter.getByRole("link", { name: /^All · \d+$/ }).textContent());
+  const tab = filter.getByRole("link", { name: /^Third party · \d+$/ });
+  const count = dollars(await tab.textContent());
+  await tab.click();
   await expect(page).toHaveURL("/car/plans?cover=third_party");
-  await expect(page.getByRole("link", { name: "Third party", exact: true })).toHaveAttribute("aria-current", "page");
-  const thirdParty = await cards(page).count();
-  expect(thirdParty).toBeGreaterThan(0);
-  expect(thirdParty).toBeLessThan(prices.length);
+  await expect(tab).toHaveAttribute("aria-current", "page");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(`${count} plans for your Corolla`);
+  await expect(cards(page)).toHaveCount(Math.min(count, 6));
+  expect(count).toBeGreaterThan(0);
+  expect(count).toBeLessThan(all);
+});
+
+test("summary strip says what was quoted, and Edit details opens the form filled in", async ({ page }) => {
+  await fillFullForm(page);
+  const summary = page.getByRole("region", { name: "Your quote" });
+  await expect(summary).toContainText("Toyota Corolla 2021");
+  await expect(summary).toContainText("GCC spec · worth $17,000");
+  await expect(summary).toContainText(/driver \d+ · licence 8 years · Lahore/);
+  await expect(summary.getByText(/^CAR-[A-Z2-9]{7}$/)).toBeVisible();
+
+  await summary.getByRole("link", { name: "Edit details" }).click();
+  await expect(page).toHaveURL("/car/details");
+  await expect(page.getByLabel("Car make")).toHaveValue("Toyota");
+  await expect(page.getByLabel("Car model")).toHaveValue("Corolla");
+  await expect(page.getByLabel("Model year")).toHaveValue("2021");
+  await expect(page.getByRole("radio", { name: "Yes" })).toBeChecked();
+  await expect(page.getByLabel("Car value (USD)")).toHaveValue("17000");
+  await expect(page.getByLabel("City")).toHaveValue("Lahore");
+  await expect(page.getByLabel("Years with a driving licence")).toHaveValue("8");
+  await expect(page.getByLabel("Full name")).toHaveValue("Bilal Ahmed");
+  await expect(page.getByRole("textbox", { name: "Email", exact: true })).toHaveValue("bilal.ahmed@example.test");
+  await expect(page.getByLabel("Mobile number")).toHaveValue("3331234567");
+
+  // A changed answer gives new prices for the changed car.
+  await page.getByLabel("Car model").selectOption("Camry");
+  await page.getByRole("button", { name: "Get prices" }).click();
+  await expect(page).toHaveURL("/car/plans", { timeout: 30_000 });
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/plans for your Camry$/, { timeout: 30_000 });
+  await expect(page.getByRole("region", { name: "Your quote" })).toContainText("Toyota Camry 2021");
+});
+
+test("sort by lowest excess, agency repair only, and show more plans", async ({ page }) => {
+  await fillFullForm(page);
+  const filter = page.getByRole("navigation", { name: "Filter by cover" });
+  const all = dollars(await filter.getByRole("link", { name: /^All · \d+$/ }).textContent());
+
+  // Fewer plans at first, then the rest.
+  const more = page.getByRole("button", { name: /^Show \d+ more plans?$/ });
+  if (all > 6) {
+    await expect(cards(page)).toHaveCount(6);
+    await expect(more).toHaveText(`Show ${all - 6} more ${all - 6 === 1 ? "plan" : "plans"}`);
+    await more.click();
+    await expect(cards(page)).toHaveCount(all);
+    await expect(more).toHaveCount(0);
+  }
+
+  await page.getByLabel("Sort by").selectOption("excess");
+  await expect(page).toHaveURL("/car/plans?sort=excess");
+  await expect(page.getByLabel("Sort by")).toHaveValue("excess");
+  const excesses = await cards(page).evaluateAll((rows) =>
+    rows.map((row) => Number(row.querySelectorAll("dd")[1]?.textContent?.replace(/[^\d]/g, ""))),
+  );
+  expect(excesses).toEqual([...excesses].sort((a, b) => a - b));
+
+  // Agency repair is comprehensive cover: its checkbox narrows the comprehensive tab, and the order stays.
+  await page.getByRole("checkbox", { name: "Agency repair only" }).check();
+  await expect(page).toHaveURL("/car/plans?cover=comprehensive_agency&sort=excess");
+  await expect(filter.getByRole("link", { name: /^Comprehensive · \d+$/ })).toHaveAttribute("aria-current", "page");
+  const agency = await cards(page).count();
+  expect(agency).toBeGreaterThan(0);
+  for (const row of await cards(page).all()) await expect(row.locator("dd").first()).toHaveText(/agency/i);
+
+  await page.getByRole("checkbox", { name: "Agency repair only" }).uncheck();
+  await expect(page).toHaveURL("/car/plans?cover=comprehensive&sort=excess");
+  await expect(page.getByRole("checkbox", { name: "Agency repair only" })).not.toBeChecked();
+  expect(await cards(page).count()).toBeGreaterThan(agency);
+});
+
+test("extras open on request and add up under the grid", async ({ page }) => {
+  await fillFullForm(page);
+  // By position: the toggle's name changes once it is open, so a filter on it would lose the row.
+  const withExtras = await cards(page).evaluateAll((rows) =>
+    rows.findIndex((row) => [...row.querySelectorAll("button")].some((b) => b.textContent?.startsWith("Add extras"))),
+  );
+  expect(withExtras).toBeGreaterThanOrEqual(0);
+  const card = cards(page).nth(withExtras);
+  const toggle = card.getByRole("button", { name: /^Add extras · \d+ available/ });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(card.getByRole("checkbox").first()).toBeHidden();
+  await toggle.click();
+  const hide = card.getByRole("button", { name: "Hide extras" });
+  await expect(hide).toHaveAttribute("aria-expanded", "true");
+
+  const addOn = await firstAddOn(card, false);
+  const price = dollars(await addOn.locator("..").getByTestId("addon-price").textContent());
+  const before = await totalOf(card);
+  await addOn.check();
+  const sum = card.getByTestId("plan-sum");
+  await expect(sum).toContainText(`= ${usd(before + price)} a year`);
+  await expect(sum).toHaveText(/^Plan \$[\d,]+ \+ \d+ extras? \(\$[\d,]+\) = \$[\d,]+ a year$/);
+  await expect(card.getByTestId("plan-total")).toHaveText(usd(before + price));
+
+  // Closed again, the ticks still count.
+  await hide.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(card.getByTestId("plan-total")).toHaveText(usd(before + price));
+});
+
+test("the coordinator card opens on click only and closes outside or with Escape", async ({ page }) => {
+  await fillFullForm(page);
+  const badge = page.getByRole("button", { name: "Your coordinator" });
+  const email = page.getByRole("banner").getByRole("link", { name: /^Email .+ through the help desk$/ });
+
+  await badge.hover();
+  await expect(email).toBeHidden();
+  await badge.click();
+  await expect(badge).toHaveAttribute("aria-expanded", "true");
+  await expect(email).toBeVisible();
+  await page.getByRole("main").click({ position: { x: 5, y: 5 } });
+  await expect(email).toBeHidden();
+
+  await badge.press("Enter");
+  await expect(email).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("banner").getByRole("link", { name: /^Call .+ on \+92/ })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(email).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(email).toBeHidden();
+  await expect(badge).toBeFocused();
+  await badge.press("Space");
+  await expect(email).toBeVisible();
+  await badge.click();
+  await expect(email).toBeHidden();
 });
 
 test("pick a plan with an optional add-on → review page shows the same total as the card", async ({ page }) => {

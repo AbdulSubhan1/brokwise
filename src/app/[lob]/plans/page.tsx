@@ -1,19 +1,22 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ContactCard } from "@/components/contact-card";
 import { DemoNotice } from "@/components/demo-notice";
-import { PageIntro } from "@/components/page-intro";
 import { PageLoading } from "@/components/page-loading";
-import { PlanCard } from "@/components/plan-card";
+import { PlanFilters } from "@/components/plan-filters";
+import { PlanList } from "@/components/plan-list";
+import { QuoteSummary } from "@/components/quote-summary";
 import { SiteHeader } from "@/components/site-header";
 import { Stepper } from "@/components/ui/stepper";
+import { readAnswers } from "@/lib/answers";
 import { contactOf } from "@/lib/contact";
 import { TOO_MANY_REQUESTS } from "@/lib/form-state";
 import { readJourney } from "@/lib/journey";
+import { coverFrom, FIRST_PLANS, showsUnder, sortFrom, sortPlans, tabOf } from "@/lib/plan-list";
 import { planTags } from "@/lib/plan-tags";
 import { getOpportunity, getPlans } from "@/lib/policydesk";
+import { todayIso } from "@/lib/travel-dates";
 import { pricesNote, priceWords } from "@/lobs";
 import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
@@ -33,17 +36,17 @@ export default function PlansPage({ params, searchParams }: PageProps<"/[lob]/pl
   );
 }
 
-function one(value: string | string[] | undefined): string {
-  return typeof value === "string" ? value : "";
-}
-
 async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "params" | "searchParams">) {
   const lob = await lobFrom(params);
   // Same gate as the received page: no valid journey cookie, no call to PolicyDesk.
   const publicId = await readJourney();
   if (!publicId) redirect(`/${lob.slug}`);
 
-  const [view, result] = await Promise.all([getOpportunity(publicId), getPlans(publicId)]);
+  const [view, result, answers] = await Promise.all([
+    getOpportunity(publicId),
+    getPlans(publicId),
+    readAnswers(lob.slug, publicId),
+  ]);
   if (!view) redirect(`/${lob.slug}`);
   stayInOwnLine(view.opportunity.product, lob, "plans");
   if (!result.ok) {
@@ -54,12 +57,26 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
   }
 
   const query = await searchParams;
-  const covers = [{ value: "", label: "All" }, ...lob.covers];
-  const cover = lob.covers.some((c) => c.value === one(query.cover)) ? one(query.cover) : "";
-  const error = ERRORS[one(query.error)];
+  const cover = coverFrom(query.cover, lob.covers);
+  const sort = sortFrom(query.sort);
+  const error = ERRORS[typeof query.error === "string" ? query.error : ""];
+  // What was quoted comes from the answers this browser sent (PolicyDesk doesn't give them back); without them, the line.
+  const summary = answers ? lob.summary(answers, todayIso()) : { title: lob.title, facts: [], forWhom: lob.forWhom };
+
   // Tags are worked out on every plan, so a filter doesn't move them.
   const tags = planTags(result.plans, lob.bestValueCover);
-  const plans = cover ? result.plans.filter((p) => p.cover === cover) : result.plans;
+  const plans = sortPlans(
+    result.plans.filter((p) => showsUnder(p.cover, cover, lob.covers)),
+    sort,
+  );
+  const tab = tabOf(cover, lob.covers);
+  const tabs = [{ value: "", label: "All" }, ...lob.covers.filter((c) => !c.within)].map((c) => ({
+    value: c.value,
+    label: c.label,
+    count: result.plans.filter((p) => showsUnder(p.cover, c.value, lob.covers)).length,
+  }));
+  const narrower = lob.covers.find((c) => c.within && c.only);
+  const bestValueCover = lob.covers.find((c) => c.value === lob.bestValueCover)?.label;
   const selection = view.selection;
 
   return (
@@ -69,16 +86,28 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
         <div className="max-w-3xl">
           <Stepper current="plan" />
         </div>
-        <PageIntro line={lob} title="Choose your plan">
-          <p>{pricesNote(lob, cover)}</p>
-          {view.lead && (
-            <p className="mt-1 text-sm">
-              Your reference: <strong className="font-mono tracking-wide text-ink">{view.lead.reference}</strong>
-            </p>
-          )}
-        </PageIntro>
 
-        <DemoNotice />
+        <QuoteSummary
+          icon={lob.icon}
+          summary={summary}
+          reference={view.lead?.reference}
+          editHref={`/${lob.slug}/details`}
+        />
+
+        <PlanFilters
+          lob={lob.slug}
+          tabs={tabs}
+          tab={tab}
+          only={narrower && { value: narrower.value, label: narrower.only!, checked: cover === narrower.value }}
+          sort={sort}
+        >
+          <h1 className="text-[1.625rem] font-extrabold tracking-tight md:text-[2.125rem]">
+            {plans.length} {plans.length === 1 ? "plan" : "plans"} for {summary.forWhom}
+          </h1>
+          <p className="mt-1.5 text-muted">
+            {pricesNote(lob, cover)} Extras are optional and added only if you tick them.
+          </p>
+        </PlanFilters>
 
         {error && (
           <p role="alert" className="rounded-lg bg-danger/10 px-4 py-3 font-medium text-danger">
@@ -86,50 +115,26 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
           </p>
         )}
 
-        <nav aria-label="Filter by cover" className="-mx-4 overflow-x-auto px-4">
-          <ul className="flex w-max gap-2">
-            {covers.map((c) => {
-              const active = c.value === cover;
-              return (
-                <li key={c.value || "all"}>
-                  <Link
-                    href={c.value ? `/${lob.slug}/plans?cover=${c.value}` : `/${lob.slug}/plans`}
-                    aria-current={active ? "page" : undefined}
-                    scroll={false}
-                    className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine ${
-                      active ? "border-pine bg-pine text-white" : "border-line bg-card text-ink hover:border-pine"
-                    }`}
-                  >
-                    {c.label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
         {plans.length === 0 ? (
           <p className="rounded-2xl border border-line bg-card p-5 text-muted">
             No plans with this cover right now. Try another cover or ask your coordinator.
           </p>
         ) : (
-          <div className="grid items-start gap-4 lg:grid-cols-2">
-            {plans.map((plan) => {
-              const chosenIds = selection?.planId === plan.id ? selection.addOnIds : undefined;
-              // The key changes when the saved choice does, so the card's ticks start again from it.
-              return (
-                <PlanCard
-                  key={`${plan.id}:${chosenIds?.join(",") ?? ""}`}
-                  lob={lob.slug}
-                  plan={plan}
-                  chosenIds={chosenIds}
-                  tags={tags.get(plan.id)}
-                  priceWords={priceWords(lob, plan.cover)}
-                />
-              );
-            })}
-          </div>
+          <PlanList
+            view={`${cover}:${sort}`}
+            lob={lob.slug}
+            first={FIRST_PLANS}
+            bestValueLabel={bestValueCover ? `Best value ${bestValueCover.toLowerCase()}` : "Best value"}
+            items={plans.map((plan) => ({
+              plan,
+              chosenIds: selection?.planId === plan.id ? selection.addOnIds : undefined,
+              tags: tags.get(plan.id),
+              priceWords: priceWords(lob, plan.cover),
+            }))}
+          />
         )}
+
+        <DemoNotice />
       </main>
     </>
   );

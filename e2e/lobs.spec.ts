@@ -40,15 +40,15 @@ test("travel full journey → plans → pay (fake) → thank-you with a home_tra
   await expect(page.getByRole("article").first()).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/^TRV-[A-Z2-9]{7}$/)).toBeVisible();
   // Travel plans only: the cover filter offers the travel covers, not car ones.
-  await expect(page.getByRole("link", { name: "Single trip", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Third party", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^Single trip · \d+$/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Third party/ })).toHaveCount(0);
 
   // A single-trip plan is priced for the trip, not for a year.
-  await page.getByRole("link", { name: "Single trip", exact: true }).click();
+  await page.getByRole("link", { name: /^Single trip · \d+$/ }).click();
   await expect(page).toHaveURL("/travel/plans?cover=single_trip");
-  await expect(page.getByText("Prices are for the whole trip, in US dollars.")).toBeVisible();
+  await expect(page.getByText("Prices for the whole trip, in US dollars.")).toBeVisible();
   const trip = page.getByRole("article").first();
-  await expect(trip.getByText("Total for this trip")).toBeVisible();
+  await expect(trip.getByText("for this trip", { exact: true }).filter({ visible: true })).toBeVisible();
   await expect(trip.getByRole("button", { name: SELECT_PLAN })).toHaveAccessibleName(/ for this trip$/);
 
   await trip.getByRole("button", { name: SELECT_PLAN }).click();
@@ -69,7 +69,7 @@ test("travel full journey → plans → pay (fake) → thank-you with a home_tra
   await expect(main.getByTestId("order-total")).toHaveText(usd(total));
   await expect(main.getByText("Your advisor Tariq Hussain will contact you about documents.")).toBeVisible();
   const badge = page.getByRole("button", { name: "Your advisor" });
-  await badge.hover();
+  await badge.click();
   await expect(page.getByRole("banner").getByRole("link", { name: "Email Tariq Hussain through the help desk" })).toHaveAttribute(
     "href",
     /^mailto:help@brokwise\.test\?subject=For%20Tariq%20Hussain%3A%20TRV-/,
@@ -89,7 +89,7 @@ test("home call me back → received shows a home_travel coordinator", async ({ 
   await expect(page.getByText("Your coordinator will call you.")).toBeVisible();
   const badge = page.getByRole("button", { name: "Your coordinator" });
   await expect(badge).toContainText("Mehwish");
-  await badge.hover();
+  await badge.click();
   await expect(page.getByRole("banner").getByRole("link", { name: "Email Mehwish Iqbal through the help desk" })).toBeVisible();
 });
 
@@ -111,6 +111,8 @@ test("health plans show the included wellness check-up", async ({ page }) => {
   const cards = await page.getByRole("article").all();
   expect(cards.length).toBeGreaterThan(0);
   for (const card of cards) {
+    // Included add-ons are listed with the extras, which open on request.
+    await card.getByRole("button", { name: /^Add extras/ }).click();
     const wellness = card.getByRole("listitem").filter({ hasText: "Wellness check-up" });
     await expect(wellness).toBeVisible();
     await expect(wellness).toContainText("Included");
