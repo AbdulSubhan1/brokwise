@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DemoNotice } from "@/components/demo-notice";
 import { FullForm } from "@/components/full-form";
 import { SiteHeader } from "@/components/site-header";
+import { turnstileSiteKey } from "@/lib/turnstile";
 
 export const metadata: Metadata = { title: "Get prices now" };
 
@@ -16,7 +17,7 @@ export default function FullFormPage() {
           <p className="mt-2 text-muted">Tell us about your car and the driver. It takes about 3 minutes.</p>
         </div>
         <DemoNotice />
-        <FullForm />
+        <FullForm turnstileSiteKey={turnstileSiteKey()} />
       </main>
     </>
   );

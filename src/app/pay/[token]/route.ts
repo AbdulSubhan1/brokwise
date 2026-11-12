@@ -17,6 +17,7 @@ export async function GET(_req: Request, ctx: RouteContext<"/pay/[token]">) {
     redirect(result.status === "paid" ? "/car/thank-you" : "/car/payment");
   }
   if (result.status === 410) redirect("/pay/expired");
-  // Unknown and revoked look the same; anything else is PolicyDesk being unreachable, worth another try.
+  // Unknown and revoked look the same; anything else (PolicyDesk unreachable, or 429 when this IP opened too many
+  // links within the hour) is worth another try.
   redirect(result.status === 404 ? "/pay/invalid" : "/pay/invalid?retry=1");
 }

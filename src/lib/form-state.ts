@@ -20,3 +20,12 @@ export function errorsByField(issues: readonly { path: PropertyKey[]; message: s
   }
   return errors;
 }
+
+/** Shown wherever PolicyDesk answers 429: this visitor's IP passed one of its hourly limits. */
+export const TOO_MANY_REQUESTS = "Too many requests. Please wait a few minutes and try again.";
+
+/** Shown when Turnstile is on and the visitor's check is missing or refused. */
+export const BOT_CHECK_FAILED = "Please complete the check to show you're not a bot.";
+
+/** The form field the Turnstile widget's token travels in (Cloudflare's own name for it). */
+export const TURNSTILE_FIELD = "cf-turnstile-response";

@@ -7,6 +7,7 @@ import { DemoNotice } from "@/components/demo-notice";
 import { PlanCard } from "@/components/plan-card";
 import { SiteHeader } from "@/components/site-header";
 import { contactOf } from "@/lib/contact";
+import { TOO_MANY_REQUESTS } from "@/lib/form-state";
 import { readJourney } from "@/lib/journey";
 import { getOpportunity, getPlans } from "@/lib/policydesk";
 
@@ -22,6 +23,7 @@ const COVERS = [
 const ERRORS: Record<string, string> = {
   unavailable: "That choice is no longer available. Please pick again.",
   failed: "We couldn't save your choice. Please try again.",
+  rate_limited: TOO_MANY_REQUESTS,
 };
 
 export default function PlansPage({ searchParams }: PageProps<"/car/plans">) {

@@ -1,0 +1,87 @@
+# Engineering highlights
+
+What this project does beyond "it works", and why. Three systems: **Brokwise** (public
+website), **PolicyDesk** (the broker's CRM) and **PaySandbox** (the payment gateway). Each item
+below says the decision, why it matters in a real broker, and where it lives and is tested.
+
+## Architecture decisions
+
+| Decision | Why | Where |
+| --- | --- | --- |
+| **The website has no database.** It calls PolicyDesk's API for everything. | The marketing site will grow large (SEO, many products) and should never hold customer data, money logic or database credentials. One source of truth, nothing to keep in sync. | `src/lib/policydesk.ts` |
+| **An API, not a shared database.** | Business rules (statuses, audit trail, scopes, pricing) stay in one place. A CRM schema change can't silently break the website. | PolicyDesk `app/api/website/v1/**` |
+| **No middle API server (yet), with written triggers.** | A CAPI-style service was considered and deferred: one website and one product don't justify a third app. The website and payment logic sits in its own folders (`server/website/`, `server/payments/`) that never import UI, so it can be lifted out by moving folders. Triggers: a second app needs the API, a real pricing engine arrives, or payments grow (split payments). | `future-scope.md`, design §4 |
+| **A broker, not a car site.** | Every API call carries `product`; product fields are a per-product schema in one `details` column; URLs are `/car/…`. A new line of business adds a schema and pages, not tables. Nothing is car-only by accident, and no generic engine is built before the second product. | design §4 |
+| **A written exception to the CRM's "no API routes" rule.** | PolicyDesk's standard bans API routes and its AI reviewer enforces it. The exception names exactly two route groups, so the rule stays meaningful. | PolicyDesk `AGENTS.md` |
+
+## Security
+
+| What | Detail | Tested by |
+| --- | --- | --- |
+| **Signed server-to-server calls** | HMAC-SHA256 over `timestamp.METHOD.path.body`, 5-minute window both ways, constant-time compare, raw body. Both repos assert the **same fixed test vector**, so the two copies of the signer can't drift apart. | `signature.test.ts` in both repos; spec 06 |
+| **Strict input** | Zod `strictObject` on both sides: unknown keys are rejected and named (`field: "coordinatorId"`), size caps (16 KB API, 64 KB webhook). | spec 06 |
+| **Prices only on the server** | The browser sends `planId` and add-on ids, never amounts. Tampered ids (another plan's add-on, an included one, duplicates) are refused. | `pricing.test.ts`; spec 07 |
+| **No guessable ids** | UUIDs in every URL; the journey lives in a signed, http-only cookie; a forged cookie sends you back to the start. | `leads.spec.ts` |
+| **Payment links** | 256-bit random tokens, **stored only as SHA-256**, shown once, 72 h, a new link revokes the old one. Unknown and revoked tokens get the **same 404**, so the API doesn't reveal which links exist. | `pay-links.test.ts`; spec 09 |
+| **Rate limits** | Per visitor IP and endpoint group, fixed hourly window, one Postgres upsert per call. Unsigned calls are refused **before** they are counted, so spam can't fill the table. The webhook is never limited. `Retry-After` on 429. | `rate-limit.test.ts` (real SQL on in-memory Postgres); spec 10 |
+| **Bot check** | Cloudflare Turnstile, verified on the server **before** anything reaches the CRM; a fresh token after each try (tokens are single-use); off until both keys are set, so it can ship before the account exists. | `actions.test.ts`, `turnstile.test.ts` |
+| **Headers** | `frame-ancestors 'none'` + `X-Frame-Options: DENY` (no clickjacking), `nosniff`, strict referrer, HSTS, Permissions-Policy. | `hardening.spec.ts` |
+| **Privacy** | The thank-you page shows masked email and phone only. Demo pages say "use made-up details". | `payment.spec.ts` |
+| **Secrets never in chat or code** | Database URLs and keys are entered by the owner in his own terminal (`read -s`) or in Vercel; the code only reads env names. | process |
+
+## Payments
+
+| What | Detail | Tested by |
+| --- | --- | --- |
+| **Idempotent checkout** | Each order uses `Idempotency-Key: order-<id>` at PaySandbox; pressing Pay twice reuses the open session instead of creating a second charge. | spec 08 |
+| **Changed mind after checkout** | A new selection expires the old pending order. A payment that still arrives on the old session is recorded and audited on its own order but never overwrites the newer choice; booking only applies a paid order whose amount matches the quote. | spec 08 |
+| **Verified, de-duplicated webhooks** | Standard Webhooks signatures; each `webhook-id` handled once (a table, insert-on-conflict). If handling fails, the row is removed and 500 is returned so the gateway's retry is processed, not skipped. | `webhook.test.ts`; spec 08 |
+| **Late webhook resilience** | If the customer is back before the webhook, the order read asks PaySandbox for the session and settles it (pull reconciliation). The thank-you page waits up to 30 s. | spec 08, `payment.spec.ts` |
+| **Failures are first-class** | `payment.failed` is audited with the decline code. Proven live: an "insufficient funds" card left the order pending and logged the reason, then a good card paid. | live test, lead CAR-8FSMAZC |
+| **Line items, not just a total** | Plan, each included add-on at $0, each paid add-on; the gateway's checkout shows exactly what the customer chose. | live checkout |
+| **Currency without conversion** | The gateway project is USD to match the CRM; amounts move as cents, never through an exchange rate. | design §8 |
+
+## Business rules that match a real broker
+
+- **Two journeys, one rule:** self-serve (full form, pay at once) and assisted (short form,
+  coordinator calls, sends a pay link). The coordinator owns everything before payment; the
+  advisor is assigned **after** payment.
+- **Automatic assignment, no manual work:** active and available people of the right role in the
+  product's department; fewest open records wins, then whoever waited longest, then lowest id.
+  The reason is written on the timeline ("fewest open"). If nobody is available, the website shows
+  a help-desk card instead of a person.
+- **Compliance stays intact:** online payment comes before KYC and documents, but the policy is
+  still only booked after them; booking then marks it paid "Online (PaySandbox)" automatically.
+  The four-eyes rule (who submits KYC can't approve it) is respected in the tests too.
+- **One open online choice per lead:** choosing again updates the same quote and reference.
+- **History stays true:** quotes copy the plan and add-ons at the time (snapshots), so editing a
+  plan later never changes what a customer was offered or paid.
+- **Everything is audited:** every website and system action appears on the lead timeline with
+  "Website" as the actor.
+
+## Delivery and quality
+
+- **Small steps, each live before the next** (leads → plans → payment → assisted → hardening),
+  each with its own design section, plan, tests and live check with made-up data.
+- **Zero-downtime database changes:** every migration is additive and runs **before** the merge,
+  so the running code never sees a missing column.
+- **Preview deployments share the production database**, so migrations never run during a build
+  (a PR preview must not change live data). Rollout order: CRM API first, website second.
+- **A fake payment gateway for tests:** a small Node server speaks PaySandbox's API, hosted
+  checkout and signed webhooks, so the whole flow (including "webhook never arrives") runs in E2E
+  without touching the live gateway or its daily limits.
+- **Cross-repo end-to-end tests:** the website's tests drive the CRM's real screens (coordinator
+  completes details, converts, creates a pay link) and then pay through the website.
+- **Test-first for logic** (signing, pricing, assignment, pay links, rate limits), and only the
+  touched specs run, once per step.
+- **Honest CI:** a lockfile written by a newer npm broke `npm ci` on CI's npm; it is regenerated
+  with the CI's npm version instead of loosening CI.
+- **Guardrails respected:** changes go through worktrees and pull requests; protected `main` is
+  never edited directly, and git hooks are never skipped.
+
+## Numbers (end of step 5)
+
+| | Unit tests | End-to-end tests |
+| --- | --- | --- |
+| PolicyDesk website/payments work | 46 | 47 (specs 06–10) |
+| Brokwise | 53 | 22 |

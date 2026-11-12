@@ -22,3 +22,12 @@ export function getEnv(): Env {
   }
   return parsed.data;
 }
+
+export type TurnstileKeys = { siteKey: string; secretKey: string };
+
+/** Cloudflare Turnstile's keys, or null unless both are set (then the forms show no check and skip it). Optional. */
+export function getTurnstileKeys(): TurnstileKeys | null {
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
+  const secretKey = process.env.TURNSTILE_SECRET_KEY?.trim();
+  return siteKey && secretKey ? { siteKey, secretKey } : null;
+}

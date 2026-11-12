@@ -1,5 +1,7 @@
 import "server-only";
+import { headers as requestHeaders } from "next/headers";
 import { z } from "zod";
+import { CLIENT_IP_HEADER, clientIpFrom, UNKNOWN_IP } from "./client-ip";
 import { getEnv } from "./env";
 import { SIGNATURE_HEADER, signRequest, TIMESTAMP_HEADER } from "./signature";
 
@@ -96,6 +98,19 @@ const errorSchema = z.object({
 
 const UNAVAILABLE: CreateResult = { ok: false, status: 502, error: { code: "unavailable" } };
 
+/** PolicyDesk's answer when this visitor's IP passed a limit (429 with Retry-After); the request was not processed. */
+export const RATE_LIMITED = "rate_limited";
+const TOO_MANY = 429;
+
+/** The visitor's IP from the incoming request, for PolicyDesk's per-IP limits. "unknown" outside a request. */
+async function visitorIp(): Promise<string> {
+  try {
+    return clientIpFrom(await requestHeaders());
+  } catch {
+    return UNKNOWN_IP;
+  }
+}
+
 async function call(method: "GET" | "POST" | "PUT", path: string, body?: unknown): Promise<Response> {
   const env = getEnv();
   const url = new URL(`${BASE_PATH}${path}`, env.POLICYDESK_API_URL);
@@ -104,6 +119,7 @@ async function call(method: "GET" | "POST" | "PUT", path: string, body?: unknown
   const headers: Record<string, string> = {
     [TIMESTAMP_HEADER]: String(ts),
     [SIGNATURE_HEADER]: signRequest(env.WEBSITE_API_SECRET, ts, method, url.pathname + url.search, raw),
+    [CLIENT_IP_HEADER]: await visitorIp(),
     accept: "application/json",
   };
   if (body !== undefined) headers["content-type"] = "application/json";
@@ -121,6 +137,7 @@ export async function createOpportunity(input: OpportunityRequest): Promise<Crea
   let json: unknown;
   try {
     res = await call("POST", "/opportunities", input);
+    if (res.status === TOO_MANY) return { ok: false, status: TOO_MANY, error: { code: RATE_LIMITED } };
     json = await res.json();
   } catch {
     return UNAVAILABLE;
@@ -151,6 +168,7 @@ export async function getPlans(publicId: string): Promise<PlansResult> {
   let json: unknown;
   try {
     res = await call("GET", `/opportunities/${encodeURIComponent(publicId)}/plans`);
+    if (res.status === TOO_MANY) return { ok: false, status: TOO_MANY, code: RATE_LIMITED };
     json = await res.json();
   } catch {
     return { ok: false, status: 502, code: "unavailable" };
@@ -178,6 +196,7 @@ export async function saveSelection(publicId: string, input: SelectionRequest): 
       planId: input.planId,
       addOnIds: input.addOnIds,
     });
+    if (res.status === TOO_MANY) return { ok: false, status: TOO_MANY, error: { code: RATE_LIMITED } };
     json = await res.json();
   } catch {
     return { ok: false, status: 502, error: { code: "unavailable" } };
@@ -200,6 +219,7 @@ async function request<T>(method: "GET" | "POST", path: string, schema: z.ZodTyp
   let json: unknown;
   try {
     res = await call(method, path, body);
+    if (res.status === TOO_MANY) return { ok: false, status: TOO_MANY, code: RATE_LIMITED };
     json = await res.json();
   } catch {
     return { ok: false, status: 502, code: "unavailable" };
@@ -273,7 +293,7 @@ export async function getOrder(publicId: string): Promise<Result<OrderView>> {
 
 export type PayLinkResult =
   | { ok: true; publicId: string; status: "active" | "paid" }
-  | { ok: false; status: 404 | 410 | 502; code: string };
+  | { ok: false; status: 404 | 410 | 429 | 502; code: string };
 
 const payLinkSchema = z.object({
   opportunity: z.object({ publicId: z.guid() }),
@@ -282,12 +302,14 @@ const payLinkSchema = z.object({
 
 /**
  * Opens a coordinator's pay link: which journey it belongs to and whether its order is paid. 404 `not_found` for an
- * unknown or revoked token (PolicyDesk doesn't say which), 410 `link_expired`; anything else, PolicyDesk being
- * unreachable included, comes back as 502.
+ * unknown or revoked token (PolicyDesk doesn't say which), 410 `link_expired`, 429 `rate_limited`; anything else,
+ * PolicyDesk being unreachable included, comes back as 502.
  */
 export async function openPayLink(token: string): Promise<PayLinkResult> {
   const result = await request("POST", `/pay-links/${encodeURIComponent(token)}/open`, payLinkSchema, {});
   if (result.ok) return { ok: true, publicId: result.data.opportunity.publicId, status: result.data.status };
-  if (result.status === 404 || result.status === 410) return { ok: false, status: result.status, code: result.code };
+  if (result.status === 404 || result.status === 410 || result.status === TOO_MANY) {
+    return { ok: false, status: result.status, code: result.code };
+  }
   return { ok: false, status: 502, code: result.code };
 }

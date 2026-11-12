@@ -4,9 +4,11 @@ import { sendFullForm } from "@/app/car/actions";
 import { CarFields } from "./car-fields";
 import { useCarForm } from "./use-car-form";
 import { MobileField } from "./contact-fields";
+import { Turnstile } from "./turnstile";
 import { FieldError, FormError, FormSection, SubmitButton, TextField } from "./form-controls";
 
-export function FullForm() {
+/** `turnstileSiteKey` is set only when Turnstile is on; then the form shows the check above its errors. */
+export function FullForm({ turnstileSiteKey }: { turnstileSiteKey: string | null }) {
   const { state, action, pending, onSubmit } = useCarForm(sendFullForm);
   const { values, errors } = state;
   return (
@@ -95,6 +97,7 @@ export function FullForm() {
         <MobileField state={state} />
       </FormSection>
 
+      {turnstileSiteKey && <Turnstile siteKey={turnstileSiteKey} />}
       <FormError message={state.formError} />
       <SubmitButton pending={pending}>Get prices</SubmitButton>
     </form>
