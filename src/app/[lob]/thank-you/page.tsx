@@ -83,7 +83,7 @@ function Paid({
 }) {
   return (
     <>
-      <SiteHeader aside={<ContactCard person={contactOf({ contact: advisor })} />} />
+      <SiteHeader aside={<ContactCard person={contactOf({ contact: advisor }, order.quoteReference)} />} />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
         <Stepper current="done" />
         <div className="flex flex-col gap-3">
