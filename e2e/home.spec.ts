@@ -38,6 +38,7 @@ test("full form → plans card → chosen plan → paid, each step linking back 
   let card = await homeCard(page, "Your car quote");
   await expect(card.getByRole("heading", { name: "Continue your car quote" })).toBeVisible();
   await expect(card.getByText(/^Reference CAR-[A-Z2-9]{7}$/)).toBeVisible();
+  await expect(card.getByText("Toyota Corolla 2021 · GCC spec · worth $17,000", { exact: true })).toBeVisible();
   await expect(card.getByText(/^\d+ plans from \$[\d,]+$/)).toBeVisible();
   await expect(card.getByRole("listitem")).toHaveCount(3);
   await card.getByRole("link", { name: "See your plans" }).click();
@@ -51,6 +52,7 @@ test("full form → plans card → chosen plan → paid, each step linking back 
 
   card = await homeCard(page, "Your car quote");
   await expect(card.getByText("Your plan")).toBeVisible();
+  await expect(card.getByText("Toyota Corolla 2021 · GCC spec · worth $17,000", { exact: true })).toBeVisible();
   await expect(card.getByText(total, { exact: true })).toBeVisible();
   await card.getByRole("link", { name: "Review and pay" }).click();
   await expect(page).toHaveURL("/car/payment");

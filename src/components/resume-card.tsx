@@ -1,10 +1,13 @@
 import { ArrowRight, BadgeCheck, Check, CreditCard, ListChecks, PhoneCall, ReceiptText, Tag } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { readAnswers } from "@/lib/answers";
 import { readJourney } from "@/lib/journey";
 import { formatUsd } from "@/lib/money";
 import { getOpportunity, getOrder, getPlans } from "@/lib/policydesk";
 import { type CardPlan, EXAMPLE_CARD, type ResumeCard as Card, resumeCardFor } from "@/lib/resume-card";
+import { todayIso } from "@/lib/travel-dates";
+import { lobForProduct } from "@/lobs";
 import { InsurerMark } from "./insurer-mark";
 import { Badge } from "./ui/badge";
 import { primaryButton, textLink } from "./ui/styles";
@@ -68,8 +71,13 @@ async function loadCard(): Promise<Card> {
   try {
     const view = await getOpportunity(publicId);
     if (!view?.lead) return resumeCardFor({ view, plans: null, order: null });
-    const [plans, order] = await Promise.all([view.selection ? null : getPlans(publicId), getOrder(publicId)]);
-    return resumeCardFor({ view, plans, order });
+    const lob = lobForProduct(view.opportunity.product);
+    const [plans, order, answers] = await Promise.all([
+      view.selection ? null : getPlans(publicId),
+      getOrder(publicId),
+      lob ? readAnswers(lob.slug, publicId) : null,
+    ]);
+    return resumeCardFor({ view, plans, order, answers, today: todayIso() });
   } catch {
     // PolicyDesk unreachable or answering something unexpected: the home page shows the example instead.
     return EXAMPLE_CARD;
@@ -88,12 +96,24 @@ function Frame({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function CardHead({ eyebrow, title, aside }: { eyebrow: ReactNode; title: string; aside?: ReactNode }) {
+function CardHead({
+  eyebrow,
+  title,
+  subject,
+  aside,
+}: {
+  eyebrow: ReactNode;
+  title: string;
+  /** What was quoted, under the title. */
+  subject?: string;
+  aside?: ReactNode;
+}) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-line pb-4">
       <div className="min-w-0">
         <p className="text-sm text-muted">{eyebrow}</p>
         <h2 className="mt-0.5 font-bold text-pretty">{title}</h2>
+        {subject && <p className="mt-1 text-sm text-pretty text-muted">{subject}</p>}
       </div>
       {aside && <div className="shrink-0">{aside}</div>}
     </div>
@@ -163,6 +183,7 @@ function QuoteCard({ card }: { card: Card }) {
           <CardHead
             eyebrow={`Reference ${card.reference}`}
             title={`Continue your ${card.lob.name.toLowerCase()} quote`}
+            subject={card.subject}
             aside={
               <Badge tone="pine">
                 {card.count} {card.count === 1 ? "plan" : "plans"} from {formatUsd(card.from)}
@@ -182,7 +203,11 @@ function QuoteCard({ card }: { card: Card }) {
     case "chosen":
       return (
         <Frame label={`Your ${card.lob.name.toLowerCase()} quote`}>
-          <CardHead eyebrow={`Quote reference ${card.reference}`} title={`Continue your ${card.lob.name.toLowerCase()} quote`} />
+          <CardHead
+            eyebrow={`Quote reference ${card.reference}`}
+            title={`Continue your ${card.lob.name.toLowerCase()} quote`}
+            subject={card.subject}
+          />
           <p className="mt-4 text-sm font-semibold text-muted">Your plan</p>
           <div className="mt-2 rounded-2xl border-2 border-pine p-4">
             <div className="flex items-center gap-3">

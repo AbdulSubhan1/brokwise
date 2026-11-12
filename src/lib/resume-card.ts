@@ -1,4 +1,5 @@
 import { type LobConfig, lobForProduct, priceWords } from "@/lobs";
+import type { FormValues } from "./form-state";
 import { type PlanTag, planTags } from "./plan-tags";
 import type { OpportunityView, OrderView, PlansResult, Result } from "./policydesk";
 
@@ -24,12 +25,22 @@ export type ResumeCard =
   /** The quick form was sent: a coordinator calls (null when nobody was free and the help desk does). */
   | { kind: "call_back"; lob: LobConfig; coordinator: string | null }
   /** The full form was sent and no plan is chosen yet: the cheapest plans, up to 3. */
-  | { kind: "plans"; lob: LobConfig; reference: string; count: number; from: number; plans: CardPlan[] }
+  | {
+      kind: "plans";
+      lob: LobConfig;
+      reference: string;
+      /** What was quoted, "Toyota Corolla 2021 · GCC spec · worth $18,000"; left out without the kept answers. */
+      subject?: string;
+      count: number;
+      from: number;
+      plans: CardPlan[];
+    }
   /** A plan is chosen and not paid yet. */
   | {
       kind: "chosen";
       lob: LobConfig;
       reference: string;
+      subject?: string;
       insurer: string;
       planName: string;
       coverLabel: string;
@@ -53,14 +64,20 @@ export type ResumeInput = {
   view: OpportunityView | null;
   plans: PlansResult | null;
   order: Result<OrderView> | null;
+  /** The full form's answers this browser kept for the journey (src/lib/answers.ts), and today as an ISO day. */
+  answers?: FormValues | null;
+  today?: string;
 };
+
+/** How many of the summary's facts the card names after its title: enough to say which car, trip or home. */
+const SUBJECT_FACTS = 2;
 
 /**
  * Which card the home page shows, most advanced step first: paid, plan chosen, plans to choose from, call back
  * requested. Anything unexpected (an unknown line, a disqualified request, a failed call, no plans) falls back to the
  * example quietly, so the home page never shows an error.
  */
-export function resumeCardFor({ view, plans, order }: ResumeInput): ResumeCard {
+export function resumeCardFor({ view, plans, order, answers, today = "" }: ResumeInput): ResumeCard {
   if (!view || view.opportunity.status === "disqualified") return EXAMPLE_CARD;
   const lob = lobForProduct(view.opportunity.product);
   if (!lob) return EXAMPLE_CARD;
@@ -81,12 +98,16 @@ export function resumeCardFor({ view, plans, order }: ResumeInput): ResumeCard {
     };
   }
 
+  const summary = answers ? lob.summary(answers, today) : null;
+  const subject = summary ? [summary.title, ...summary.facts.slice(0, SUBJECT_FACTS)].join(" · ") : undefined;
+
   const selection = view.selection;
   if (selection) {
     return {
       kind: "chosen",
       lob,
       reference: selection.quoteReference,
+      ...(subject && { subject }),
       insurer: selection.insurer,
       planName: selection.planName,
       coverLabel: selection.coverLabel,
@@ -102,6 +123,7 @@ export function resumeCardFor({ view, plans, order }: ResumeInput): ResumeCard {
     kind: "plans",
     lob,
     reference: view.lead.reference,
+    ...(subject && { subject }),
     count: plans.plans.length,
     from: cheapest[0].basePremium,
     plans: cheapest.map((p) => {

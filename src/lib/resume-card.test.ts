@@ -111,6 +111,19 @@ describe("resumeCardFor", () => {
     expect(card.plans[0]).toMatchObject({ insurer: "Insurer 2", name: "Plan 2", excess: 102, per: "a year" });
   });
 
+  it("names what was quoted when this browser kept the answers", () => {
+    const answers = { make: "Toyota", model: "Corolla", year: "2021", gccSpec: "yes", carValue: "18000", city: "Lahore" };
+    const plans = plansOk([plan(2, "third_party", 910)]);
+    const subject = "Toyota Corolla 2021 · GCC spec · worth $18,000";
+    expect(resumeCardFor({ view: view(), plans, order: noOrder, answers, today: "2026-11-12" })).toMatchObject({
+      kind: "plans",
+      subject,
+    });
+    const chosen = resumeCardFor({ view: view({ selection: SELECTION }), plans: null, order: noOrder, answers });
+    expect(chosen).toMatchObject({ kind: "chosen", subject });
+    expect(resumeCardFor({ view: view(), plans, order: noOrder, answers: null })).not.toHaveProperty("subject");
+  });
+
   it("says a travel single-trip price is for the trip", () => {
     const card = resumeCardFor({
       view: view({ product: "travel" }),

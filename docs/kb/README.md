@@ -349,22 +349,22 @@ already make (the opportunity, the plans, the order); no new PolicyDesk endpoint
 | Journey | Card | Button |
 | --- | --- | --- |
 | None, an expired or forged cookie, an id PolicyDesk doesn't know, PolicyDesk unreachable, a disqualified request | **Example quote**, marked "Example": a Toyota Corolla 2021 worth $18,000, "9 car plans from $765" and three real catalogue plans for PolicyDesk's typical driver (Northwind Plus $1,110 "Best value", Bluepeak Plus $1,215, Harbor Essential $910), each with cover and excess. "Example prices for a typical driver. Yours are worked out from your answers." | "Get your car prices" link |
-| Full form sent, no plan chosen | "Continue your car quote", the lead reference, "9 plans from $765" and the 3 cheapest plans (insurer, plan, cover · excess, price, a year or for this trip; "Cheapest" / "Best value" tags) | **See your plans** → `/<line>/plans` |
-| Plan chosen, not paid (also while a payment is being confirmed) | "Continue your car quote", the quote reference, the chosen insurer and plan, its cover and the total | **Review and pay** → `/<line>/payment` |
+| Full form sent, no plan chosen | "Continue your car quote", the lead reference, what was quoted ("Toyota Corolla 2021 · GCC spec · worth $18,000"), "9 plans from $765" and the 3 cheapest plans (insurer, plan, cover · excess, price, a year or for this trip; "Cheapest" / "Best value" tags) | **See your plans** → `/<line>/plans` |
+| Plan chosen, not paid (also while a payment is being confirmed) | "Continue your car quote", the quote reference, what was quoted, the chosen insurer and plan, its cover and the total | **Review and pay** → `/<line>/payment` |
 | Paid | "Payment received", the quote reference, the plan and the total paid | **See your order** → `/<line>/thank-you` |
 | Call me back sent | "We'll call you", the line, the coordinator's name (or the help desk when nobody was free) and three steps | "See your request" → `/<line>/received` |
 
 The call-back card has no reference: a call-me-back request gets one only when the coordinator turns it into
-a lead, and then the card moves on to the plans. The plans card shows the lead reference instead of the car
-and its value ("Toyota Corolla 2021 · $18,000"), because PolicyDesk's opportunity view doesn't return the
-form's details.
+a lead, and then the card moves on to the plans. What was quoted is the plans page's summary (the title and its
+first two answers), from the answers this browser kept in the `bw_answers` cookie (see "Plans page redesign").
+A journey opened from a pay link has none, and the card leaves the line out.
 
 **Fast and quiet.** Only the card waits for the request: it sits in `<Suspense>` with a skeleton of the same
 size, so the rest of the home page is prerendered (the build marks `/` as partial prerender). Every state
 and the skeleton share the card's size (taller on phones), so nothing jumps when it streams in. Any failure
 shows the example; the home page never shows an error.
 
-**Tests.** Unit: which card for which journey (`src/lib/resume-card.test.ts`, 11 cases). E2E
+**Tests.** Unit: which card for which journey (`src/lib/resume-card.test.ts`, 12 cases). E2E
 (`e2e/home.spec.ts`): the example and the call-back menu; full form → plans card → chosen plan → paid, each
-button back into the journey; a call-me-back request, and a forged cookie falling back to the example.
+button back into the journey and the car named on the plans and chosen cards; a call-me-back request, and a forged cookie falling back to the example.
 
