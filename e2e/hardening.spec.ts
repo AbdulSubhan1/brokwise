@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // What the default E2E setup can show: security headers, and forms that work with no Turnstile keys and load nothing
 // from Cloudflare. The rate-limit message and the Turnstile on/off logic are covered by unit tests
-// (src/app/car/actions.test.ts, src/lib/turnstile.test.ts, src/components/turnstile.test.ts); PolicyDesk's own E2E
+// (src/app/[lob]/actions.test.ts, src/lib/turnstile.test.ts, src/components/turnstile.test.ts); PolicyDesk's own E2E
 // covers the limits themselves.
 
 const SECURITY_HEADERS = {

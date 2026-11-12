@@ -10,7 +10,8 @@ const figtree = Figtree({
 
 export const metadata: Metadata = {
   title: { default: "Brokwise · Insurance, the wise way", template: "%s · Brokwise" },
-  description: "Brokwise is a demo insurance broker. Compare car insurance or ask a coordinator to call you back.",
+  description:
+    "Brokwise is a demo insurance broker. Compare car, travel, home and health insurance or ask a coordinator to call you back.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

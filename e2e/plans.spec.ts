@@ -8,10 +8,17 @@ function cards(page: Page): Locator {
   return page.getByRole("article");
 }
 
-/** The first card that has an add-on matching `checked`. */
+/** Opens a card's collapsible "Add-ons (n)" list, if it has one and it is closed. */
+async function showAddOns(card: Locator) {
+  const toggle = card.getByRole("button", { name: /^Add-ons \(\d+\)/ });
+  if ((await toggle.count()) > 0 && (await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+}
+
+/** The first card that has an add-on matching `checked`, with its add-ons shown. */
 async function cardWithAddOn(page: Page, checked: boolean): Promise<Locator> {
   const all = await cards(page).all();
   for (const card of all) {
+    await showAddOns(card);
     if ((await card.getByRole("checkbox", { checked }).count()) > 0) return card;
   }
   throw new Error(`No plan card has an add-on with checked=${checked}`);

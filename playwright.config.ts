@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// End-to-end tests run Brokwise against a real local PolicyDesk (branch feat/website-rate-limits) with its own test
+// End-to-end tests run Brokwise against a real local PolicyDesk (branch feat/website-more-lobs) with its own test
 // database, and PolicyDesk against its fake PaySandbox (e2e/fake-paysandbox.mjs in PolicyDesk), so the whole payment
 // runs without the live service.
 const POLICYDESK_DIR = process.env.POLICYDESK_DIR ?? "../policydesk-website";

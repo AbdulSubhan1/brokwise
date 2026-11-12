@@ -1,32 +1,12 @@
 import { COUNTRY_CODES } from "@/lib/schemas";
 import type { FormState } from "@/lib/form-state";
-import { FieldError, TextField } from "./form-controls";
+import { FieldError } from "./form-controls";
+import { Select } from "./ui/select";
+import { control } from "./ui/styles";
 
-/** Full name, email and mobile (country code + national number). */
-export function ContactFields({ state, nameLabel = "Full name" }: { state: FormState; nameLabel?: string }) {
-  const { values, errors } = state;
-  return (
-    <>
-      <TextField
-        name="customerName"
-        label={nameLabel}
-        autoComplete="name"
-        defaultValue={values.customerName}
-        error={errors.customerName}
-      />
-      <TextField
-        name="email"
-        label="Email"
-        type="email"
-        autoComplete="email"
-        defaultValue={values.email}
-        error={errors.email}
-      />
-      <MobileField state={state} />
-    </>
-  );
-}
+const DIALS = COUNTRY_CODES.map((c) => ({ value: c.dial, label: c.label }));
 
+/** Mobile number: country code + national number, one label for both. */
 export function MobileField({ state }: { state: FormState }) {
   const { values, errors } = state;
   const error = errors.mobile ?? errors.countryCode;
@@ -36,18 +16,13 @@ export function MobileField({ state }: { state: FormState }) {
         Mobile number
       </label>
       <div className="mt-1 flex gap-2">
-        <select
+        <Select
           name="countryCode"
           aria-label="Country code"
           defaultValue={values.countryCode ?? "+92"}
-          className="rounded-lg border border-line bg-card px-2 py-2.5 text-base focus:border-pine focus:outline-2 focus:outline-pine/30"
-        >
-          {COUNTRY_CODES.map((c) => (
-            <option key={c.dial} value={c.dial}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+          options={DIALS}
+          className="w-[9.5rem] shrink-0"
+        />
         <input
           id="mobile"
           name="mobile"
@@ -58,7 +33,7 @@ export function MobileField({ state }: { state: FormState }) {
           defaultValue={values.mobile}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? "mobile-error" : undefined}
-          className="block w-full min-w-0 rounded-lg border border-line bg-card px-3 py-2.5 text-base placeholder:text-muted/70 focus:border-pine focus:outline-2 focus:outline-pine/30 aria-invalid:border-danger"
+          className={`${control} min-w-0`}
         />
       </div>
       <FieldError id="mobile-error" message={error} />

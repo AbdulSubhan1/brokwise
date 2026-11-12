@@ -1,6 +1,7 @@
 import "server-only";
 import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { getEnv } from "./env";
 
 // The website keeps no database: the visitor's journey is the opportunity's public id in a signed, http-only cookie,
@@ -34,6 +35,8 @@ export async function setJourney(publicId: string): Promise<void> {
 export async function readJourney(): Promise<string | null> {
   const token = (await cookies()).get(JOURNEY_COOKIE)?.value;
   if (!token) return null;
+  // Checking the token's expiry reads the clock; this keeps that check out of any prerender (or prefetch).
+  await connection();
   try {
     const { payload } = await jwtVerify(token, key(), { algorithms: ["HS256"] });
     return typeof payload.sub === "string" && UUID.test(payload.sub) ? payload.sub : null;

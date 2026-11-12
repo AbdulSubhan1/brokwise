@@ -1,6 +1,6 @@
 # Brokwise
 
-Brokwise is a made-up insurance broker's website, car insurance first. It is the demo merchant for
+Brokwise is a made-up insurance broker's website selling car, travel, home and health insurance. It is the demo merchant for
 PaySandbox (a fake payment gateway) and uses PolicyDesk (an insurance CRM) as its back office. Every
 person, insurer and number on it is made up.
 
@@ -11,23 +11,28 @@ creates the checkout session and receives PaySandbox's webhook, then assigns an 
 journey is kept in a signed, http-only cookie. A "Call me back" customer pays through a private payment link that their
 coordinator creates in PolicyDesk.
 
-- `/` home, with the lines of business (only Car is active for now)
-- `/car` choose between "Get prices now" and "Call me back"
-- `/car/details` full form (creates an opportunity and a lead), then on to the plans
-- `/car/quick` short form (creates an opportunity)
-- `/car/received` request received, with the assigned coordinator in the header
-- `/car/plans` car plans with add-ons and a live total (full-form journeys only)
-- `/car/selected` the saved plan and add-ons, priced by PolicyDesk, with the quote reference
-- `/car/payment` lines, total and terms box; "Pay" opens PaySandbox's hosted checkout
-- `/car/thank-you` the paid order and the advisor assigned after payment (or "Confirming your payment…")
-- `/pay/<token>` a coordinator's private payment link ("Call me back" journeys): opens the payment page, or the
-  thank-you page once paid; `/pay/expired` and `/pay/invalid` when it can't be used
+Every line of business (`car`, `travel`, `home`, `health`) has the same pages, driven by one config file
+per line in `src/lobs/`:
+
+- `/` home, with the four lines of business
+- `/<line>` choose between "Get prices now" and "Call me back", with what the line covers
+- `/<line>/details` full form (creates an opportunity and a lead), then on to the plans
+- `/<line>/quick` short form (creates an opportunity)
+- `/<line>/received` request received, with the assigned coordinator in the header
+- `/<line>/plans` the line's plans with add-ons and a live total (full-form journeys only)
+- `/<line>/selected` the saved plan and add-ons, priced by PolicyDesk, with the quote reference
+- `/<line>/payment` lines, total and terms box; "Pay" opens PaySandbox's hosted checkout
+- `/<line>/thank-you` the paid order and the advisor assigned after payment (or "Confirming your payment…")
+- `/pay/<token>` a coordinator's private payment link ("Call me back" journeys): opens the line's payment page, or
+  its thank-you page once paid; `/pay/expired` and `/pay/invalid` when it can't be used
+
+Any other line (`/boat`) is a "page not found" with links to the four lines.
 
 More in [`docs/kb/`](docs/kb/README.md) and the design in [`docs/superpowers/specs/`](docs/superpowers/specs/2026-11-11-brokwise-design.md).
 
 ## Run it locally with PolicyDesk
 
-You need PolicyDesk with the website API (rate limits: branch `feat/website-rate-limits`) running next to Brokwise.
+You need PolicyDesk with the website API (four products: branch `feat/website-more-lobs`) running next to Brokwise.
 
 1. Start PolicyDesk on port 3070 with a website secret. To pay, also give it PaySandbox settings
    (a PaySandbox `sk_test_` key and webhook secret, or PolicyDesk's fake PaySandbox as below) and
@@ -60,7 +65,7 @@ You need PolicyDesk with the website API (rate limits: branch `feat/website-rate
 | `POLICYDESK_API_URL` | Where PolicyDesk runs, e.g. `http://localhost:3070`. |
 | `WEBSITE_API_SECRET` | Shared secret that signs every call to PolicyDesk. Same value as `WEBSITE_API_SECRET` in PolicyDesk (`dev-secret` in the example above). |
 | `JOURNEY_COOKIE_SECRET` | Signs the `bw_journey` cookie. At least 32 characters. |
-| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Optional. Cloudflare Turnstile site key for the "not a bot" check on `/car/quick` and `/car/details`. |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Optional. Cloudflare Turnstile site key for the "not a bot" check on the quick and full forms. |
 | `TURNSTILE_SECRET_KEY` | Optional. Cloudflare Turnstile secret key; the form actions verify each token with it before calling PolicyDesk. |
 
 The app checks the first three when it first needs them and stops with a clear message if one is missing.
@@ -87,5 +92,5 @@ and secret `2x0000000000000000000000000000000AA` always fails.
 | `npm run build` / `npm start` | Production build and server. |
 | `npm run lint` | ESLint. |
 | `npm run typecheck` | TypeScript check. |
-| `npm test` | Unit tests (Vitest): request signing, form rules, money format, the plan card total, the header contact card, the pay-link token shape, the visitor IP, Turnstile and the 429 messages. |
+| `npm test` | Unit tests (Vitest): request signing, form rules per line (travel dates included), each line's `buildDetails`, the date selects, the progress bar, plan tags, money format, the plan card total, the header contact card, the pay-link token shape, the visitor IP, Turnstile and the 429 messages. |
 | `npm run test:e2e` | End-to-end tests (Playwright). Starts PolicyDesk on 3070 (from `POLICYDESK_DIR`, default `../policydesk-website`; `POLICYDESK_PORT` to change the port), PolicyDesk's fake PaySandbox on 3072 and Brokwise on 3100. Run `npx playwright install chromium` once first. |

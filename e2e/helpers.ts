@@ -10,6 +10,15 @@ export function usd(n: number): string {
   return `$${n.toLocaleString("en-US")}`;
 }
 
+/** Picks an ISO date (YYYY-MM-DD) in a DateField: its Day, Month and Year selects inside the labelled group. */
+export async function pickDate(page: Page, label: string, iso: string) {
+  const [year, month, day] = iso.split("-");
+  const group = page.getByRole("group", { name: label, exact: true });
+  await group.getByLabel("Day").selectOption(String(Number(day)));
+  await group.getByLabel("Month").selectOption(String(Number(month)));
+  await group.getByLabel("Year").selectOption(year);
+}
+
 /** Sends the full form (which creates a lead) and waits for the plan cards to stream in. */
 export async function fillFullForm(page: Page, email = "bilal.ahmed@example.test") {
   await page.goto("/car/details");
@@ -19,7 +28,7 @@ export async function fillFullForm(page: Page, email = "bilal.ahmed@example.test
   await page.getByRole("radio", { name: "Yes" }).check();
   await page.getByLabel("Car value (USD)").fill("17000");
   await page.getByLabel("Full name").fill("Bilal Ahmed");
-  await page.getByLabel("Date of birth").fill("1990-03-21");
+  await pickDate(page, "Date of birth", "1990-03-21");
   await page.getByLabel("Nationality").fill("Pakistani");
   await page.getByLabel("City").fill("Lahore");
   await page.getByLabel("Years with a driving licence").fill("8");
