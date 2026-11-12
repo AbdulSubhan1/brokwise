@@ -131,7 +131,7 @@ export async function selectPlan(formData: FormData): Promise<void> {
 /** What the payment form shows after a failed Pay: a terms error under the box, or a message for the whole form. */
 export type PaymentFormState = { termsError?: string; formError?: string };
 
-const TERMS_REQUIRED = "Tick the box to confirm before you pay.";
+const TERMS_REQUIRED = "Tick the box to agree to the terms before you pay.";
 const PAYMENTS_UNAVAILABLE = "Payments are unavailable right now. Please try again later.";
 
 /**

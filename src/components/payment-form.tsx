@@ -5,7 +5,7 @@ import { type FormEvent, startTransition, useActionState } from "react";
 import { type PaymentFormState, startPaymentAction } from "@/app/[lob]/actions";
 import { formatUsd } from "@/lib/money";
 import { FieldError, FormError } from "./form-controls";
-import { primaryButton } from "./ui/styles";
+import { primaryButton, textLink } from "./ui/styles";
 
 const EMPTY: PaymentFormState = {};
 
@@ -37,7 +37,13 @@ export function PaymentForm({ lob, total }: { lob: string; total: number }) {
             aria-describedby={state.termsError ? "terms-error" : undefined}
             className="mt-0.5 size-5 shrink-0 accent-pine focus-visible:outline-none"
           />
-          <span>I confirm this is a demo and my details are made up.</span>
+          <span>
+            I agree to the{" "}
+            <a href="/terms" target="_blank" rel="noreferrer" className={textLink}>
+              terms and conditions
+            </a>{" "}
+            and confirm my details are made up for this demo.
+          </span>
         </label>
         <FieldError id="terms-error" message={state.termsError} />
       </div>

@@ -7,7 +7,7 @@ import { dollars, fillFullForm, SELECT_PLAN, usd } from "./helpers";
 
 const CHECKOUT = /^http:\/\/localhost:3072\/c\//;
 const THANK_YOU = /\/car\/thank-you(\?.*)?$/;
-const TERMS = "I confirm this is a demo and my details are made up.";
+const TERMS = "I agree to the terms and conditions and confirm my details are made up for this demo.";
 
 /** Full form → first plan → straight to the review-and-pay page. Returns the saved total. */
 async function openPayment(page: Page, email?: string): Promise<number> {
@@ -78,7 +78,7 @@ test("terms box must be ticked", async ({ page }) => {
   const terms = page.getByRole("main").getByLabel(TERMS);
 
   await page.getByRole("button", { name: `Pay ${usd(total)} with PaySandbox` }).click();
-  await expect(page.getByText("Tick the box to confirm before you pay.")).toBeVisible();
+  await expect(page.getByText("Tick the box to agree to the terms before you pay.")).toBeVisible();
   await expect(terms).toHaveAttribute("aria-invalid", "true");
   await expect(page).toHaveURL("/car/payment");
 

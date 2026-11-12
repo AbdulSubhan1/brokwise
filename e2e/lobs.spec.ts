@@ -6,7 +6,7 @@ import { dollars, pickDate, SELECT_PLAN, usd } from "./helpers";
 // department; payment goes through PolicyDesk's fake PaySandbox on port 3072, as in payment.spec.ts.
 
 const CHECKOUT = /^http:\/\/localhost:3072\/c\//;
-const TERMS = "I confirm this is a demo and my details are made up.";
+const TERMS = "I agree to the terms and conditions and confirm my details are made up for this demo.";
 const NEXT_YEAR = new Date().getFullYear() + 1;
 
 async function contact(page: Page, name: string, email: string, mobile: string) {

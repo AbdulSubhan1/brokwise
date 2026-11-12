@@ -1,6 +1,6 @@
-// The first path segments Brokwise serves: the four lines (src/lobs) and the pay-link pages. Kept as plain strings, not
+// The first path segments Brokwise serves: the four lines (src/lobs), the pay-link pages and the terms page. Kept as plain strings, not
 // imported from src/lobs, so the proxy stays free of forms and icons; top-level-routes.test.ts checks they match.
-const TOP_LEVEL = new Set(["car", "travel", "home", "health", "pay"]);
+const TOP_LEVEL = new Set(["car", "travel", "home", "health", "pay", "terms"]);
 
 /**
  * Next's own build of src/app/not-found.tsx, prerendered with a 404 status. The proxy shows it for paths that aren't

@@ -69,6 +69,11 @@ export function SiteFooter() {
               </a>
             </li>
             <li>Every day, 9 am to 9 pm</li>
+            <li>
+              <Link href="/terms" className={link}>
+                Terms and conditions
+              </Link>
+            </li>
           </ul>
         </div>
       </div>
