@@ -68,11 +68,11 @@ export function labelsOf(field: FieldSpec): FieldLabel[] {
     case "mobile":
       // One label and one message line for both: the country code's mistakes show under the number.
       return [fixed("mobile", "Enter"), fixed("countryCode", "Choose", "mobile")];
-    case "date":
+    case "date": {
       // The link moves to the Day select, the first of the three.
-      return [
-        { name: field.name, label: field.label, anchor: `${field.name}-day`, required: requiredOf("Enter", field.label) },
-      ];
+      const required = requiredOf("Enter", field.label);
+      return [{ name: field.name, label: field.label, anchor: `${field.name}-day`, required }];
+    }
     default: {
       // A choice's link moves to its first radio button, which RadioCards gives the field's name as id.
       const verb = field.kind === "text" ? "Enter" : "Choose";

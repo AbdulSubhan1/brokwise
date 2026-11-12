@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { REQUIRED } from "@/lib/schemas";
-import { formLabels, getLob, LOB_SLUGS, lobForProduct, withFieldMessages } from "./index";
+import { formLabels, getLob, LOB_SLUGS, lobForProduct, pricesNote, priceWords, withFieldMessages } from "./index";
 
 // buildDetails turns a form's raw strings into what PolicyDesk's POST /opportunities takes, or field errors.
 
@@ -230,5 +230,29 @@ describe("field labels and messages", () => {
     expect(withFieldMessages(getLob("health")!, "full", { children: REQUIRED })).toEqual({
       children: "Choose your number of children.",
     });
+  });
+});
+
+describe("price period", () => {
+  const travel = getLob("travel")!;
+
+  it("a single trip or Schengen plan is priced for the trip, an annual one for a year", () => {
+    expect(priceWords(travel, "single_trip")).toEqual({ total: "Total for this trip", price: "for this trip" });
+    expect(priceWords(travel, "schengen").total).toBe("Total for this trip");
+    expect(priceWords(travel, "annual_multi_trip")).toEqual({ total: "Total a year", price: "a year" });
+  });
+
+  it("every other line is priced for a year", () => {
+    for (const slug of ["car", "home", "health"]) {
+      const lob = getLob(slug)!;
+      for (const c of lob.covers) expect(priceWords(lob, c.value).total).toBe("Total a year");
+      expect(pricesNote(lob)).toBe("Prices are yearly, in US dollars.");
+    }
+  });
+
+  it("the plans note follows the cover filter", () => {
+    expect(pricesNote(travel, "single_trip")).toBe("Prices are for the whole trip, in US dollars.");
+    expect(pricesNote(travel, "annual_multi_trip")).toBe("Prices are yearly, in US dollars.");
+    expect(pricesNote(travel)).toBe("Prices are in US dollars, for a year or for the whole trip as each plan says.");
   });
 });

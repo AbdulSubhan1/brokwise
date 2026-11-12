@@ -43,6 +43,12 @@ export type FieldSpec = { showWhen?: ShowWhen } & (
   | { kind: "mobile" }
 );
 
+/** How long a plan's price runs: a year, or the one trip it covers. */
+export type PricePeriod = "year" | "trip";
+
+/** A cover of the plans filter. A price is for a year unless the cover says `period: "trip"`. */
+export type CoverSpec = Option & { period?: PricePeriod };
+
 export type FormSectionSpec = { title: string; icon: LucideIcon; fields: readonly FieldSpec[] };
 
 export type BuildResult =
@@ -69,7 +75,7 @@ export type LobConfig = {
   quickSection: FormSectionSpec;
   fullSections: readonly FormSectionSpec[];
   /** The cover filter on the plans page; values are PolicyDesk's cover keys. */
-  covers: readonly Option[];
+  covers: readonly CoverSpec[];
   /** The widest cover of the line: its cheapest plan is tagged "Best value". */
   bestValueCover: string;
   /** The form's raw values → PolicyDesk's request (contact and details), or the errors by field. */

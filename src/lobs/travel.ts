@@ -93,9 +93,10 @@ export const travel: LobConfig = {
     { title: "About you", icon: UserRound, fields: [{ kind: "name" }, { kind: "email" }, { kind: "mobile" }] },
   ],
   covers: [
-    { value: "single_trip", label: "Single trip" },
+    { value: "single_trip", label: "Single trip", period: "trip" },
     { value: "annual_multi_trip", label: "Annual multi-trip" },
-    { value: "schengen", label: "Schengen" },
+    // Schengen plans cover the one trip a visa is for.
+    { value: "schengen", label: "Schengen", period: "trip" },
   ],
   bestValueCover: "annual_multi_trip",
   buildDetails: detailsBuilder({ short: travelQuickSchema, full: travelFullSchema }),

@@ -16,6 +16,7 @@ import { textLink } from "@/components/ui/styles";
 import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
 import { getOpportunity, getPaymentSummary } from "@/lib/policydesk";
+import { priceWords } from "@/lobs";
 import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
 export const metadata: Metadata = { title: "Payment", robots: { index: false } };
@@ -67,7 +68,11 @@ async function Payment({ params }: { params: Promise<{ lob: string }> }) {
             What you pay
           </h2>
           <div className="mt-2">
-            <OrderLines lines={summary.lines} total={summary.total} totalLabel="Total a year" />
+            <OrderLines
+              lines={summary.lines}
+              total={summary.total}
+              totalLabel={priceWords(lob, view.selection?.cover ?? "").total}
+            />
           </div>
         </Card>
 
