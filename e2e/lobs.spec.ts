@@ -118,7 +118,8 @@ test("health plans show the included wellness check-up", async ({ page }) => {
 });
 
 test("unknown line → 404 with links", async ({ page }) => {
-  await page.goto("/boat/details");
+  const response = await page.goto("/boat/details");
+  expect(response?.status()).toBe(404);
   const main = page.getByRole("main");
   await expect(main.getByRole("heading", { name: "We can't find that page" })).toBeVisible();
   for (const [name, href] of [
