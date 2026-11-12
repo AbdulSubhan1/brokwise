@@ -118,7 +118,8 @@ test("unknown line → 404 with links", async ({ page }) => {
   ]) {
     await expect(main.getByRole("link", { name })).toHaveAttribute("href", href);
   }
-  await expect(page.locator('meta[name="robots"][content*="noindex"]')).toHaveCount(1);
+  // Next adds its own noindex for not-found pages next to ours; what matters is that one is there
+  await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached();
 });
 
 test("old /car/details still works", async ({ page }) => {
