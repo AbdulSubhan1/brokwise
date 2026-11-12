@@ -1,7 +1,7 @@
 "use client";
 
 import { LoaderCircle, Lock, ShieldCheck } from "lucide-react";
-import { type FormEvent, startTransition, useActionState } from "react";
+import { type FormEvent, startTransition, useActionState, useState } from "react";
 import { type PaymentFormState, startPaymentAction } from "@/app/[lob]/actions";
 import { formatUsd } from "@/lib/money";
 import { FieldError, FormError } from "./form-controls";
@@ -12,10 +12,12 @@ const EMPTY: PaymentFormState = {};
 /**
  * Terms box and the Pay button. The server action checks the box again and sends the visitor to PaySandbox's hosted
  * checkout. Run through startTransition, like the journey forms, so a failed Pay keeps the box as the visitor left it;
- * without JavaScript the plain `action` still works.
+ * without JavaScript the plain `action` still works. The "tick the box" message goes away once the box is ticked.
  */
 export function PaymentForm({ lob, total }: { lob: string; total: number }) {
   const [state, action, pending] = useActionState(startPaymentAction, EMPTY);
+  const [ticked, setTicked] = useState(false);
+  const termsError = ticked ? undefined : state.termsError;
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,8 +35,9 @@ export function PaymentForm({ lob, total }: { lob: string; total: number }) {
             name="terms"
             value="yes"
             required
-            aria-invalid={state.termsError ? true : undefined}
-            aria-describedby={state.termsError ? "terms-error" : undefined}
+            onChange={(e) => setTicked(e.target.checked)}
+            aria-invalid={termsError ? true : undefined}
+            aria-describedby={termsError ? "terms-error" : undefined}
             className="mt-0.5 size-5 shrink-0 accent-pine focus-visible:outline-none"
           />
           <span>
@@ -45,7 +48,7 @@ export function PaymentForm({ lob, total }: { lob: string; total: number }) {
             and confirm my details are made up for this demo.
           </span>
         </label>
-        <FieldError id="terms-error" message={state.termsError} />
+        <FieldError id="terms-error" message={termsError} />
       </div>
 
       <FormError message={state.formError} />

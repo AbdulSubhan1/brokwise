@@ -82,7 +82,10 @@ test("terms box must be ticked", async ({ page }) => {
   await expect(terms).toHaveAttribute("aria-invalid", "true");
   await expect(page).toHaveURL("/car/payment");
 
+  // Ticking the box clears its message straight away
   await terms.check();
+  await expect(page.getByText("Tick the box to agree to the terms before you pay.")).toHaveCount(0);
+  await expect(terms).not.toHaveAttribute("aria-invalid", "true");
   await page.getByRole("button", { name: `Pay ${usd(total)} with PaySandbox` }).click();
   await expect(page).toHaveURL(CHECKOUT, { timeout: 30_000 });
 });
