@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DemoNotice } from "@/components/demo-notice";
 import { QuickForm } from "@/components/quick-form";
 import { SiteHeader } from "@/components/site-header";
+import { turnstileSiteKey } from "@/lib/turnstile";
 
 export const metadata: Metadata = { title: "Call me back" };
 
@@ -16,7 +17,7 @@ export default function QuickFormPage() {
           <p className="mt-2 text-muted">Leave a few details and a coordinator will call you to find a plan.</p>
         </div>
         <DemoNotice />
-        <QuickForm />
+        <QuickForm turnstileSiteKey={turnstileSiteKey()} />
       </main>
     </>
   );

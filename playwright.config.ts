@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// End-to-end tests run Brokwise against a real local PolicyDesk (branch feat/website-assisted) with its own test
+// End-to-end tests run Brokwise against a real local PolicyDesk (branch feat/website-rate-limits) with its own test
 // database, and PolicyDesk against its fake PaySandbox (e2e/fake-paysandbox.mjs in PolicyDesk), so the whole payment
 // runs without the live service.
 const POLICYDESK_DIR = process.env.POLICYDESK_DIR ?? "../policydesk-website";
@@ -50,6 +50,8 @@ export default defineConfig({
         PAYSANDBOX_SECRET_KEY,
         PAYSANDBOX_WEBHOOK_SECRET,
         WEBSITE_URL: `http://localhost:${PORT}`,
+        // Every Brokwise browser test comes from one IP, so PolicyDesk's per-IP limits would trip; its own E2E covers them.
+        RATE_LIMITS: "off",
       },
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
@@ -61,6 +63,9 @@ export default defineConfig({
         POLICYDESK_API_URL: `http://localhost:${POLICYDESK_PORT}`,
         WEBSITE_API_SECRET,
         JOURNEY_COOKIE_SECRET,
+        // No Turnstile keys: the forms run without the check (e2e/hardening.spec.ts makes sure of it).
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "",
+        TURNSTILE_SECRET_KEY: "",
       },
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

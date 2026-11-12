@@ -5,7 +5,7 @@ only **car** is built today. It is a demo merchant for PaySandbox (a fake paymen
 PolicyDesk (an insurance CRM) as its back office. All people, insurers and numbers are made up.
 
 Pages in this folder:
-- this overview: what Brokwise is, the three systems, the journeys and what steps 1 to 4 ship;
+- this overview: what Brokwise is, the three systems, the journeys and what steps 1 to 5 ship;
 - [future-scope.md](future-scope.md): what is planned later and what triggers it.
 
 The full design is in [`docs/superpowers/specs/2026-11-11-brokwise-design.md`](../superpowers/specs/2026-11-11-brokwise-design.md).
@@ -201,3 +201,39 @@ advisor after payment and thank-you page.
 back → the coordinator works the opportunity in PolicyDesk's own pages (signed in with its demo Admin
 button) and creates a link → the customer pays through `/pay/<token>` → thank-you with the advisor; the
 paid link opened again → thank-you; a garbage or unknown token → the invalid page and no cookie.
+
+## What step 5 ships
+
+Hardening against bots and abuse. Nothing changes for a normal visitor.
+
+**Rate limits (in PolicyDesk).** Every call to PolicyDesk carries the visitor's IP in the
+`x-brokwise-client-ip` header: the first address in `x-forwarded-for`, else `x-real-ip`, else `unknown`.
+PolicyDesk counts requests per IP per hour (leads 5, plan choices 30, payments 20, pay-link opens 20,
+reads 600 by default) and answers `429 rate_limited` with `Retry-After` past a limit. The website then
+shows "Too many requests. Please wait a few minutes and try again.":
+
+| Where | What the visitor sees |
+| --- | --- |
+| `/car/quick`, `/car/details` | the message above the button; every value stays in the form |
+| `/car/plans` (Select this plan) | the message at the top of the plans (`?error=rate_limited`) |
+| `/car/payment` (Pay) | the message above the Pay button |
+| `/pay/<token>` | `/pay/invalid?retry=1` ("We couldn't open your link. Please try again.") |
+
+**Turnstile (optional).** With both `NEXT_PUBLIC_TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` set, the
+two car forms show Cloudflare's "not a bot" check above the button. On send, the server action first
+checks the fields, then verifies the check's token with Cloudflare (with the visitor's IP) and only then
+calls PolicyDesk. A missing or refused check shows "Please complete the check to show you're not a bot."
+and nothing reaches PolicyDesk. Each send asks the widget for a fresh token. With either key unset there
+is no widget, no check and no Cloudflare script, exactly as before.
+
+**Security headers** on every page: `X-Frame-Options: DENY`, `Content-Security-Policy: frame-ancestors
+'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+`Permissions-Policy: camera=(), microphone=(), geolocation=()`, and in production
+`Strict-Transport-Security: max-age=63072000; includeSubDomains`.
+
+**Tests.** Unit: the visitor IP (`src/lib/client-ip.test.ts`), Turnstile verify with a mocked Cloudflare
+(`src/lib/turnstile.test.ts`), the widget's container and token field (`src/components/turnstile.test.ts`),
+429 mapping in the PolicyDesk client (`src/lib/policydesk.test.ts`) and the form, plan and Pay messages
+(`src/app/car/actions.test.ts`). E2E (`e2e/hardening.spec.ts`): the headers on `/` and `/car/quick`, and the
+call-me-back form working with no Turnstile keys and no request to Cloudflare. PolicyDesk runs with
+`RATE_LIMITS=off` in Brokwise's E2E, since every browser test comes from one IP.
