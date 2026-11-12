@@ -40,13 +40,13 @@ export const travel: LobConfig = {
     intro: "One trip or a year of them: compare plans for where you are going, or ask a coordinator to call.",
     covered: [
       "Emergency medical care and evacuation abroad",
-      "Lost, stolen or delayed baggage",
-      "Trip cancellation and missed connections as add-ons",
-      "Schengen visa cover for Europe",
+      "Lost or stolen baggage, with baggage delay as an add-on",
+      "Trip cancellation: included on annual plans, an add-on for one trip",
+      "Schengen visa cover for trips to Europe",
     ],
   },
   intros: {
-    full: "Tell us about your trip and who is travelling. It takes about 2 minutes.",
+    full: "Tell us about your trip and who is travelling. Your answers set the price. It takes about 2 minutes.",
     quick: "Tell us where you are going and a coordinator will call you to find a plan.",
   },
   quickSection: { title: "Your trip", icon: Globe, fields: [destination] },

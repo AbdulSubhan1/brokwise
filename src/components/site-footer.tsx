@@ -3,7 +3,14 @@ import Link from "next/link";
 import { HELP_DESK } from "@/lib/contact";
 import { LOB_META } from "@/lobs/meta";
 
-const COMPANY = ["About Brokwise", "Our partner insurers", "Careers", "Privacy"] as const;
+// The insurers PolicyDesk sells, all made up.
+const PARTNERS = [
+  "Bluepeak Insurance",
+  "Crescent Cover",
+  "Harbor Mutual",
+  "Northwind Assurance",
+  "Summit General",
+] as const;
 
 const link =
   "rounded-sm underline-offset-2 hover:text-white hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-saffron";
@@ -40,10 +47,9 @@ export function SiteFooter() {
         </nav>
 
         <div>
-          <h2 className="font-semibold text-white">Company</h2>
-          {/* Text only: a demo broker has no such pages. */}
+          <h2 className="font-semibold text-white">Partner insurers</h2>
           <ul className="mt-3 flex flex-col gap-2 text-sm">
-            {COMPANY.map((item) => (
+            {PARTNERS.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>

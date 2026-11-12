@@ -124,7 +124,7 @@ now also returns the saved `selection`.
 | Page | What it does |
 | --- | --- |
 | `/car/selected` | Now has a "Continue to payment" button (the "payment opens in the next release" note is gone). |
-| `/car/payment` | "Payment": the quote reference, each line ("Included" for a $0 included add-on) and the total, the demo notice, a required box "I agree to the terms and confirm my details are made up for this demo." and the button "Pay $1,200 with PaySandbox" (the real total), with the note "You'll pay on PaySandbox's test checkout. Use test card 4242 4242 4242 4242." |
+| `/car/payment` | "Payment": the quote reference, each line ("Included" for a $0 included add-on) and the total, the demo notice, a required box "I confirm this is a demo and my details are made up." and the button "Pay $1,200 with PaySandbox" (the real total), with the note "You'll pay on PaySandbox's test checkout. Use test card 4242 4242 4242 4242." |
 | `/car/thank-you` | Paid: "Payment received", the lines and total paid, the date paid, the PaySandbox payment id (`pay_…`), "A receipt goes to" the masked email, and next steps with the advisor's name. The header card shows **the advisor** ("Your advisor"), or the help desk when no advisor was free. Not confirmed yet: "Confirming your payment…" (see below). |
 
 **Pay.** The button runs a server action that asks PolicyDesk to start the payment
@@ -154,7 +154,7 @@ coordinator will confirm by email." While pending, the header still shows the co
 **Errors.** If PolicyDesk has payments switched off (`503 payments_disabled`), PaySandbox is down
 (`502 paysandbox_unavailable`) or PolicyDesk can't be reached, the payment page shows "Payments are
 unavailable right now. Please try again later." Without the terms box ticked it shows "Tick the box to
-agree to the terms before you pay." under the box. If a page can't load its data it shows a "Try again"
+confirm before you pay." under the box. If a page can't load its data it shows a "Try again"
 page.
 
 **API calls** (signed as in step 1): `GET /opportunities/{publicId}/payment` (lines, total, quote
