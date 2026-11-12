@@ -26,7 +26,7 @@ flowchart LR
 
 | System | Owns |
 | --- | --- |
-| **Brokwise website** (this repo) | Marketing and journey pages, forms, the plans page, the payment page and the thank-you page. Stores nothing except a signed journey cookie. Never talks to PaySandbox's API. |
+| **Brokwise website** (this repo) | Marketing and journey pages, forms, the plans page, the payment page and the thank-you page. Stores nothing except a signed journey cookie and, for the plans page, the full form's answers in an encrypted cookie. Never talks to PaySandbox's API. |
 | **PolicyDesk** | All data: opportunities, leads, plans, orders, payments, automatic assignment and the audit timeline. The private website API. The only holder of the PaySandbox key. |
 | **PaySandbox** | Checkout sessions, hosted checkout, payment events and webhooks. |
 
@@ -305,3 +305,29 @@ Small fixes from a UX audit of the live site.
 | `/<line>/payment` | Now "Review and pay": selecting a plan comes straight here. It shows the insurer and plan, the cover, each line and the total, one quote reference, "Change plan" and the Pay form. `/<line>/selected` ("Your choice is saved") is gone and redirects here, so old links still work. |
 | `/<line>/plans` | Each **Select** button's accessible name says which plan and price it picks ("Select Northwind Essential, $110 for this trip"). |
 | Price wording | A cover in `src/lobs` can say `period: "trip"` (travel's single trip and Schengen). Those plans say "Total for this trip"; the rest "Total a year". The plans page note follows the cover filter, with a mixed note when travel shows every cover. |
+
+## Plans page redesign
+
+`/<line>/plans` follows the approved "Choose your plan" design. Business rules are unchanged: PolicyDesk
+still prices the saved choice, the row's price is the same display total as before (`src/lib/plan-total.ts`),
+and the tags are worked out as before (`src/lib/plan-tags.ts`).
+
+| Where | What changes |
+| --- | --- |
+| Summary strip | At the top: what was quoted (car: "Toyota Corolla 2021 · GCC spec · worth $18,000 · driver 34 · licence 6 years · Lahore"; travel: region, single trip or annual plan, dates, travellers, oldest age; home: property type and city, owner or tenant, building and contents values; health: who is covered, children, your age, pre-existing conditions, city), the lead reference ("Quote CAR-XXXXXXX") and **Edit details**. On a phone it keeps the title and the first two answers. PolicyDesk's website API doesn't give the details back, so they come from the answers this browser sent (below); a journey opened from a pay link has none and the strip names the line instead. |
+| Edit details | Opens `/<line>/details` with every answer filled in again, contact included. Sending it creates a new quote (a new opportunity and lead, with a new reference), as any full form does: PolicyDesk has no call to change a lead's details. |
+| Kept answers | After a full form is sent, its answers go in the `bw_answers` cookie: encrypted (A256GCM JWE with `jose`), http-only, 7 days, tied to the journey's public id and the line (`src/lib/answers.ts`). The call-me-back form keeps none. |
+| Heading | "9 plans for your Corolla" (your trip, your villa, you and your spouse…), the price note from the cover config ("Yearly prices in US dollars." or "for the whole trip") and "Extras are optional and added only if you tick them." |
+| Sort by | Lowest price (the price each row shows to start with: the plan with its pre-ticked extras) or lowest excess, as `?sort=excess`. It works with the cover filter; ties keep PolicyDesk's order. |
+| Cover filter | A segmented control with counts ("All · 9", "Third party · 3", "Comprehensive · 6"; counts from sm up). `?cover=` works as before. A cover can sit `within` another in `src/lobs`: car's agency repair counts under Comprehensive and gets an "Agency repair only" checkbox (`?cover=comprehensive_agency`); `?cover=comprehensive` now includes agency-repair plans. Without JavaScript the sort and checkbox are a GET form with an Apply button. |
+| Plan rows | One plan per row from md up, wrapping like the design (name block `flex 1 1 240px`, facts `2 1 340px`, price and Select pushed right): insurer mark, plan and insurer; Cover, Excess and one key fact (included add-ons, else the first benefits); the price (largest text) with "a year" / "for this trip" (and "with 1 extra"), and Select. On a phone, a compact card: name and price on one line, cover and excess under them, then "Extras · N" and Select side by side. Cheapest, Best value (named after its cover: "Best value comprehensive") and "Your choice" sit as pills on the row's top edge; the best-value row and the saved choice get a thicker border and a solid Select. |
+| Extras | Collapsed behind "Add extras · N available" (a button with `aria-expanded`; "Hide extras" when open). Open: a grid of rows, included ones tinted with "Included", pre-ticked ones first with "Added for you · untick to remove", optional ones as checkboxes with "+$30", then "Plan $1,110 + 1 extra ($30) = $1,140 a year". Collapsed ticks are still sent. |
+| Fewer plans first | The first 6 (after sort and filter), then "Show N more plans"; focus moves to the first new plan. The saved choice is never hidden behind it. |
+| Header contact card | Opens and closes on a click, tap, Enter or Space on the badge only (no hover, no opening on focus). A click outside, Escape (focus back on the badge) or tabbing out closes it. Every journey page. |
+
+**Tests.** Unit: `src/lib/plan-list.test.ts` (cover and sort params, the filter, the order, the URLs),
+`src/lobs/summary.test.ts` (each line's summary and ages), `lobs.test.ts` (price notes),
+`actions.test.ts` (answers kept after a full form only). E2E (`e2e/plans.spec.ts`): the heading, counts
+and filter, the summary and **Edit details** filled in again (and a changed car), sort by excess,
+"Agency repair only", "Show N more plans", extras and the sum line, and the click-only contact card.
+

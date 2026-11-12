@@ -19,7 +19,8 @@ per line in `src/lobs/`:
 - `/<line>/details` full form (creates an opportunity and a lead), then on to the plans
 - `/<line>/quick` short form (creates an opportunity)
 - `/<line>/received` request received, with the assigned coordinator in the header
-- `/<line>/plans` the line's plans with add-ons and a live total (full-form journeys only)
+- `/<line>/plans` "N plans for your Corolla": what was quoted with "Edit details", sort and cover filter, one row per
+  plan with its extras on request and a live price (full-form journeys only)
 - `/<line>/payment` "Review and pay": the saved plan and add-ons, priced by PolicyDesk, with the quote reference,
   "Change plan", and the terms box; "Pay" opens PaySandbox's hosted checkout (`/<line>/selected` redirects here)
 - `/<line>/thank-you` the paid order and the advisor assigned after payment (or "Confirming your payment…")
@@ -80,6 +81,9 @@ and secret `2x0000000000000000000000000000000AA` always fails.
   `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` and
   `Permissions-Policy: camera=(), microphone=(), geolocation=()`; production also sends
   `Strict-Transport-Security: max-age=63072000; includeSubDomains` (`next.config.ts`).
+- The full form's answers are kept in an encrypted, http-only `bw_answers` cookie (AES-256-GCM, key derived from
+  `JOURNEY_COOKIE_SECRET`, 7 days) for the plans page's summary and "Edit details". It holds the visitor's name,
+  email and mobile, so it is encrypted, not just signed; it only counts for the journey and line it was written for.
 - Each call to PolicyDesk carries the visitor's IP in `x-brokwise-client-ip` (first `x-forwarded-for` address, else
   `x-real-ip`, else `unknown`). PolicyDesk limits requests per IP per hour and answers 429; the website then shows
   "Too many requests. Please wait a few minutes and try again."
