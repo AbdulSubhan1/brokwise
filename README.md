@@ -8,7 +8,8 @@ The website has no database. Its forms call PolicyDesk's private website API wit
 server-to-server requests; PolicyDesk stores the opportunity (and, for the full form, the lead) and
 assigns a coordinator automatically. Payment goes through PaySandbox's hosted checkout: PolicyDesk
 creates the checkout session and receives PaySandbox's webhook, then assigns an advisor. The visitor's
-journey is kept in a signed, http-only cookie.
+journey is kept in a signed, http-only cookie. A "Call me back" customer pays through a private payment link that their
+coordinator creates in PolicyDesk.
 
 - `/` home, with the lines of business (only Car is active for now)
 - `/car` choose between "Get prices now" and "Call me back"
@@ -19,12 +20,14 @@ journey is kept in a signed, http-only cookie.
 - `/car/selected` the saved plan and add-ons, priced by PolicyDesk, with the quote reference
 - `/car/payment` lines, total and terms box; "Pay" opens PaySandbox's hosted checkout
 - `/car/thank-you` the paid order and the advisor assigned after payment (or "Confirming your payment…")
+- `/pay/<token>` a coordinator's private payment link ("Call me back" journeys): opens the payment page, or the
+  thank-you page once paid; `/pay/expired` and `/pay/invalid` when it can't be used
 
 More in [`docs/kb/`](docs/kb/README.md) and the design in [`docs/superpowers/specs/`](docs/superpowers/specs/2026-11-11-brokwise-design.md).
 
 ## Run it locally with PolicyDesk
 
-You need PolicyDesk with the website API (payments: branch `feat/website-payments`) running next to Brokwise.
+You need PolicyDesk with the website API (pay links: branch `feat/website-assisted`) running next to Brokwise.
 
 1. Start PolicyDesk on port 3070 with a website secret. To pay, also give it PaySandbox settings
    (a PaySandbox `sk_test_` key and webhook secret, or PolicyDesk's fake PaySandbox as below) and
@@ -68,5 +71,5 @@ The app checks these when it first needs them and stops with a clear message if 
 | `npm run build` / `npm start` | Production build and server. |
 | `npm run lint` | ESLint. |
 | `npm run typecheck` | TypeScript check. |
-| `npm test` | Unit tests (Vitest): request signing, form rules, money format, the plan card total and the header contact card. |
+| `npm test` | Unit tests (Vitest): request signing, form rules, money format, the plan card total, the header contact card and the pay-link token shape. |
 | `npm run test:e2e` | End-to-end tests (Playwright). Starts PolicyDesk on 3070 (from `POLICYDESK_DIR`, default `../policydesk-website`; `POLICYDESK_PORT` to change the port), PolicyDesk's fake PaySandbox on 3072 and Brokwise on 3100. Run `npx playwright install chromium` once first. |

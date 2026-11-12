@@ -65,7 +65,12 @@ async function Received() {
               </Link>
             </p>
           ) : (
-            <p className="mt-2 text-muted">Your coordinator will call you.</p>
+            <>
+              <p className="mt-2 text-muted">Your coordinator will call you.</p>
+              <p className="mt-2 text-muted">
+                When your coordinator has your details, they&apos;ll send you a payment link.
+              </p>
+            </>
           )}
           <p className="mt-4 text-sm text-muted">
             {view.contact
