@@ -331,3 +331,40 @@ and the tags are worked out as before (`src/lib/plan-tags.ts`).
 and filter, the summary and **Edit details** filled in again (and a changed car), sort by excess,
 "Agency repair only", "Show N more plans", extras and the sum line, and the click-only contact card.
 
+## Home page redesign: the "resume your journey" card
+
+The home page (`/`) has a new hero: on desktop the text sits on the left and a quote card on the right; on
+phones the card comes under the text. The header, "What we cover" (the four lines), "How it works" and the
+footer stay, restyled to sit under the new hero.
+
+| Part of `/` | What it shows |
+| --- | --- |
+| Hero text | "Car · Travel · Home · Health", the heading "Insurance, the wise way", an intro that names the four lines and says prices are worked out from the visitor's answers, **Choose your insurance** (scrolls to "What we cover") and **Ask for a call back** (a short menu of the four lines, each opening that line's call-me-back form). |
+| Trust row | "12,400+ customers helped" (made up, as the footer says of every number), "5 partner insurers", "4 lines of cover". No rating. |
+| Quote card | The visitor's own journey when the journey cookie points to one, else an example (below). |
+
+**The card's states.** The card reads the journey cookie and asks PolicyDesk with the calls the journey pages
+already make (the opportunity, the plans, the order); no new PolicyDesk endpoint.
+
+| Journey | Card | Button |
+| --- | --- | --- |
+| None, an expired or forged cookie, an id PolicyDesk doesn't know, PolicyDesk unreachable, a disqualified request | **Example quote**, marked "Example": a Toyota Corolla 2021 worth $18,000, "9 car plans from $765" and three real catalogue plans for PolicyDesk's typical driver (Northwind Plus $1,110 "Best value", Bluepeak Plus $1,215, Harbor Essential $910), each with cover and excess. "Example prices for a typical driver. Yours are worked out from your answers." | "Get your car prices" link |
+| Full form sent, no plan chosen | "Continue your car quote", the lead reference, "9 plans from $765" and the 3 cheapest plans (insurer, plan, cover · excess, price, a year or for this trip; "Cheapest" / "Best value" tags) | **See your plans** → `/<line>/plans` |
+| Plan chosen, not paid (also while a payment is being confirmed) | "Continue your car quote", the quote reference, the chosen insurer and plan, its cover and the total | **Review and pay** → `/<line>/payment` |
+| Paid | "Payment received", the quote reference, the plan and the total paid | **See your order** → `/<line>/thank-you` |
+| Call me back sent | "We'll call you", the line, the coordinator's name (or the help desk when nobody was free) and three steps | "See your request" → `/<line>/received` |
+
+The call-back card has no reference: a call-me-back request gets one only when the coordinator turns it into
+a lead, and then the card moves on to the plans. The plans card shows the lead reference instead of the car
+and its value ("Toyota Corolla 2021 · $18,000"), because PolicyDesk's opportunity view doesn't return the
+form's details.
+
+**Fast and quiet.** Only the card waits for the request: it sits in `<Suspense>` with a skeleton of the same
+size, so the rest of the home page is prerendered (the build marks `/` as partial prerender). Every state
+and the skeleton share the card's size (taller on phones), so nothing jumps when it streams in. Any failure
+shows the example; the home page never shows an error.
+
+**Tests.** Unit: which card for which journey (`src/lib/resume-card.test.ts`, 11 cases). E2E
+(`e2e/home.spec.ts`): the example and the call-back menu; full form → plans card → chosen plan → paid, each
+button back into the journey; a call-me-back request, and a forged cookie falling back to the example.
+
