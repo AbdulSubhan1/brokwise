@@ -185,3 +185,20 @@ describe("buildDetails", () => {
     if (!result.ok) expect(Object.keys(result.errors).sort()).toEqual(["coverFor", "email"]);
   });
 });
+
+describe("pricePeriod", () => {
+  it("travel single trip is per trip", () => {
+    expect(getLob("travel")!.pricePeriod("single_trip")).toBe("trip");
+    expect(getLob("travel")!.pricePeriod("schengen")).toBe("trip");
+  });
+
+  it("travel annual is per year", () => {
+    expect(getLob("travel")!.pricePeriod("annual_multi_trip")).toBe("year");
+  });
+
+  it("car is per year", () => {
+    expect(getLob("car")!.pricePeriod("third_party")).toBe("year");
+    expect(getLob("home")!.pricePeriod("contents")).toBe("year");
+    expect(getLob("health")!.pricePeriod("health_basic")).toBe("year");
+  });
+});

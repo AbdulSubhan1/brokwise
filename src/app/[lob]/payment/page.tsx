@@ -16,6 +16,7 @@ import { textLink } from "@/components/ui/styles";
 import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
 import { getOpportunity, getPaymentSummary } from "@/lib/policydesk";
+import { TOTAL_LABEL } from "@/lib/price-period";
 import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
 export const metadata: Metadata = { title: "Payment", robots: { index: false } };
@@ -45,6 +46,8 @@ async function Payment({ params }: { params: Promise<{ lob: string }> }) {
   }
   const summary = result.data;
   if (summary.status === "already_paid") redirect(`/${lob.slug}/thank-you`);
+  // The summary is the saved choice, so its cover says what the total is for.
+  const period = view.selection ? lob.pricePeriod(view.selection.cover) : "year";
 
   return (
     <>
@@ -67,7 +70,7 @@ async function Payment({ params }: { params: Promise<{ lob: string }> }) {
             What you pay
           </h2>
           <div className="mt-2">
-            <OrderLines lines={summary.lines} total={summary.total} totalLabel="Total a year" />
+            <OrderLines lines={summary.lines} total={summary.total} totalLabel={TOTAL_LABEL[period]} />
           </div>
         </Card>
 

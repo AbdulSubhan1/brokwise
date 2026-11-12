@@ -16,6 +16,7 @@ import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
 import { formatUsd } from "@/lib/money";
 import { getOpportunity } from "@/lib/policydesk";
+import { TOTAL_LABEL } from "@/lib/price-period";
 import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
 export const metadata: Metadata = { title: "Your choice", robots: { index: false } };
@@ -79,7 +80,7 @@ async function Selected({ params }: { params: Promise<{ lob: string }> }) {
               </div>
             ))}
             <div className="flex items-baseline justify-between gap-4 pt-3">
-              <dt className="font-bold">Total a year</dt>
+              <dt className="font-bold">{TOTAL_LABEL[lob.pricePeriod(selection.cover)]}</dt>
               <dd className="text-2xl font-extrabold" data-testid="selection-total">
                 {formatUsd(selection.total)}
               </dd>

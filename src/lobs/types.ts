@@ -3,6 +3,7 @@ import type { RadioCardOption } from "@/components/ui/radio-cards";
 import type { Option } from "@/components/ui/select";
 import type { FormValues } from "@/lib/form-state";
 import type { LeadRequest, WebsiteProduct } from "@/lib/policydesk";
+import type { PricePeriod } from "@/lib/price-period";
 
 export type FormKind = "short" | "full";
 
@@ -60,6 +61,8 @@ export type LobConfig = {
   covers: readonly Option[];
   /** The widest cover of the line: its cheapest plan is tagged "Best value". */
   bestValueCover: string;
+  /** What a plan of this cover is priced for: a year, or one trip. */
+  pricePeriod(cover: string): PricePeriod;
   /** The form's raw values → PolicyDesk's request (contact and details), or the errors by field. */
   buildDetails(form: FormKind, values: FormValues): BuildResult;
 };

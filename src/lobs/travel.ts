@@ -97,5 +97,7 @@ export const travel: LobConfig = {
     { value: "schengen", label: "Schengen" },
   ],
   bestValueCover: "annual_multi_trip",
+  // An annual plan covers every trip for a year; single-trip and Schengen plans cover one trip.
+  pricePeriod: (cover) => (cover === "annual_multi_trip" ? "year" : "trip"),
   buildDetails: detailsBuilder({ short: travelQuickSchema, full: travelFullSchema }),
 };

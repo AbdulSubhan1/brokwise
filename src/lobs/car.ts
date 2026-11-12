@@ -1,5 +1,6 @@
 import { Car, Mail, UserRound } from "lucide-react";
 import { carFullSchema, carQuickSchema, LIMITS } from "@/lib/schemas";
+import { yearly } from "@/lib/price-period";
 import { detailsBuilder, THIS_YEAR, YES_NO } from "./build";
 import { metaOf } from "./meta";
 import type { LobConfig } from "./types";
@@ -65,5 +66,6 @@ export const car: LobConfig = {
     { value: "comprehensive_agency", label: "Agency repair" },
   ],
   bestValueCover: "comprehensive",
+  pricePeriod: yearly,
   buildDetails: detailsBuilder({ short: carQuickSchema, full: carFullSchema }),
 };

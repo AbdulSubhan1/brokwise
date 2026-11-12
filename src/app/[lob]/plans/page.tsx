@@ -60,6 +60,8 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
   const tags = planTags(result.plans, lob.bestValueCover);
   const plans = cover ? result.plans.filter((p) => p.cover === cover) : result.plans;
   const selection = view.selection;
+  // Car, home and health plans run a year; travel has per-trip plans too.
+  const allYearly = lob.covers.every((c) => lob.pricePeriod(c.value) === "year");
 
   return (
     <>
@@ -69,7 +71,11 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
           <Stepper current="plan" />
         </div>
         <PageIntro line={lob} title="Choose your plan">
-          <p>Prices are yearly, in US dollars.</p>
+          <p>
+            {allYearly
+              ? "Prices are yearly, in US dollars."
+              : "Prices are per trip, or per year for annual plans, in US dollars."}
+          </p>
           {view.lead && (
             <p className="mt-1 text-sm">
               Your reference: <strong className="font-mono tracking-wide text-ink">{view.lead.reference}</strong>
@@ -121,6 +127,7 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
                   key={`${plan.id}:${chosenIds?.join(",") ?? ""}`}
                   lob={lob.slug}
                   plan={plan}
+                  period={lob.pricePeriod(plan.cover)}
                   chosenIds={chosenIds}
                   tags={tags.get(plan.id)}
                 />

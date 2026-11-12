@@ -1,5 +1,6 @@
 import { Building, Building2, House, KeyRound, UserRound, Warehouse } from "lucide-react";
 import { homeFullSchema, homeQuickSchema } from "@/lib/schemas";
+import { yearly } from "@/lib/price-period";
 import { detailsBuilder } from "./build";
 import { metaOf } from "./meta";
 import type { FieldSpec, LobConfig } from "./types";
@@ -76,5 +77,6 @@ export const home: LobConfig = {
     { value: "building_contents", label: "Building and contents" },
   ],
   bestValueCover: "building_contents",
+  pricePeriod: yearly,
   buildDetails: detailsBuilder({ short: homeQuickSchema, full: homeFullSchema }),
 };

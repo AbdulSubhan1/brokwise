@@ -1,5 +1,6 @@
 import { User, UserRound, Users, UsersRound } from "lucide-react";
 import { healthFullSchema, healthQuickSchema, LIMITS } from "@/lib/schemas";
+import { yearly } from "@/lib/price-period";
 import { detailsBuilder, THIS_YEAR, YES_NO } from "./build";
 import { metaOf } from "./meta";
 import type { FieldSpec, LobConfig } from "./types";
@@ -75,5 +76,6 @@ export const health: LobConfig = {
     { value: "health_premium", label: "Premium" },
   ],
   bestValueCover: "health_premium",
+  pricePeriod: yearly,
   buildDetails: detailsBuilder({ short: healthQuickSchema, full: healthFullSchema }),
 };

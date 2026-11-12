@@ -16,6 +16,7 @@ import { textLink } from "@/components/ui/styles";
 import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
 import { getOpportunity, getOrder, type OrderView } from "@/lib/policydesk";
+import { PAID_LABEL, type PricePeriod } from "@/lib/price-period";
 import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 import type { LobConfig } from "@/lobs";
 
@@ -37,7 +38,8 @@ async function ThankYou({ params }: { params: Promise<{ lob: string }> }) {
   const publicId = await readJourney();
   if (!publicId) redirect(`/${lob.slug}`);
 
-  const result = await getOrder(publicId);
+  // The opportunity holds the chosen plan's cover, which says what the paid total was for.
+  const [result, view] = await Promise.all([getOrder(publicId), getOpportunity(publicId)]);
   if (!result.ok) {
     if (result.code === "no_lead") redirect(`/${lob.slug}/received`);
     if (result.status === 404) redirect(`/${lob.slug}`);
@@ -45,10 +47,12 @@ async function ThankYou({ params }: { params: Promise<{ lob: string }> }) {
   }
   const { order, advisor } = result.data;
   if (!order) redirect(`/${lob.slug}/payment`);
-  if (order.status === "paid") return <Paid lob={lob} order={order} advisor={advisor} />;
+  if (order.status === "paid") {
+    const period = view?.selection ? lob.pricePeriod(view.selection.cover) : "year";
+    return <Paid lob={lob} order={order} advisor={advisor} period={period} />;
+  }
 
   // Not confirmed yet: the coordinator still looks after the journey, so the header shows them.
-  const view = await getOpportunity(publicId);
   if (!view) redirect(`/${lob.slug}`);
   stayInOwnLine(view.opportunity.product, lob, "thank-you");
   return (
@@ -76,10 +80,12 @@ function Paid({
   lob,
   order,
   advisor,
+  period,
 }: {
   lob: LobConfig;
   order: NonNullable<OrderView["order"]>;
   advisor: OrderView["advisor"];
+  period: PricePeriod;
 }) {
   return (
     <>
@@ -103,7 +109,7 @@ function Paid({
             Your order
           </h2>
           <div className="mt-2">
-            <OrderLines lines={order.lines} total={order.total} totalLabel="Total paid" />
+            <OrderLines lines={order.lines} total={order.total} totalLabel={PAID_LABEL[period]} />
           </div>
           <ul className="mt-4 flex flex-col gap-1 border-t border-line pt-4 text-sm text-muted">
             {order.paidAt && <li>Paid on {PAID_ON.format(new Date(order.paidAt))}</li>}

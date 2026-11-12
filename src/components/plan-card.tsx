@@ -5,6 +5,7 @@ import { type FormEvent, useId, useState, useTransition } from "react";
 import { selectPlan } from "@/app/[lob]/actions";
 import { formatUsd } from "@/lib/money";
 import { planTotal } from "@/lib/plan-total";
+import { type PricePeriod, TOTAL_LABEL } from "@/lib/price-period";
 import type { WebsitePlan } from "@/lib/policydesk";
 import { InsurerMark } from "./insurer-mark";
 import { Badge } from "./ui/badge";
@@ -28,11 +29,14 @@ const TAGS = {
 export function PlanCard({
   lob,
   plan,
+  period,
   chosenIds,
   tags = [],
 }: {
   lob: string;
   plan: WebsitePlan;
+  /** What the plan's price is for: the total reads "a year" or "for the trip". */
+  period: PricePeriod;
   chosenIds?: number[];
   tags?: readonly PlanTag[];
 }) {
@@ -182,7 +186,7 @@ export function PlanCard({
 
         <div className="sticky bottom-0 -mx-5 mt-auto flex items-center justify-between gap-3 border-t border-line bg-card px-5 py-3 md:static md:mx-0 md:px-0 md:pt-4 md:pb-0">
           <p aria-live="polite">
-            <span className="block text-xs text-muted">Total a year</span>
+            <span className="block text-xs text-muted">{TOTAL_LABEL[period]}</span>
             <strong className="text-2xl font-extrabold" data-testid="plan-total">
               {formatUsd(total)}
             </strong>
