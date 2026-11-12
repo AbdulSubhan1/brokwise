@@ -2,9 +2,16 @@ import { Building, Building2, House, KeyRound, UserRound, Warehouse } from "luci
 import { homeFullSchema, homeQuickSchema } from "@/lib/schemas";
 import { detailsBuilder } from "./build";
 import { metaOf } from "./meta";
+import { labelOf, present, usdOf } from "./summary";
 import type { FieldSpec, LobConfig } from "./types";
 
 const city: FieldSpec = { kind: "text", name: "city", label: "City", autoComplete: "address-level2" };
+
+const PROPERTY_TYPES = [
+  { value: "apartment", label: "Apartment", icon: Building2 },
+  { value: "villa", label: "Villa", icon: House },
+  { value: "townhouse", label: "Townhouse", icon: Building },
+] as const;
 
 export const home: LobConfig = {
   ...metaOf("home"),
@@ -33,11 +40,7 @@ export const home: LobConfig = {
           kind: "choice",
           name: "propertyType",
           label: "Property type",
-          options: [
-            { value: "apartment", label: "Apartment", icon: Building2 },
-            { value: "villa", label: "Villa", icon: House },
-            { value: "townhouse", label: "Townhouse", icon: Building },
-          ],
+          options: PROPERTY_TYPES,
         },
         {
           kind: "choice",
@@ -76,5 +79,19 @@ export const home: LobConfig = {
     { value: "building_contents", label: "Building and contents" },
   ],
   bestValueCover: "building_contents",
+  forWhom: "your home",
+  summary: (v) => {
+    const type = labelOf(PROPERTY_TYPES, v.propertyType);
+    return {
+      title: present(type ?? "Your home", v.city && `in ${v.city}`).join(" "),
+      facts: present(
+        v.occupancy === "owner" && "owner",
+        v.occupancy === "tenant" && "tenant",
+        usdOf(v.buildingValue) && `building ${usdOf(v.buildingValue)}`,
+        usdOf(v.contentsValue) && `contents ${usdOf(v.contentsValue)}`,
+      ),
+      forWhom: type ? `your ${type.toLowerCase()}` : "your home",
+    };
+  },
   buildDetails: detailsBuilder({ short: homeQuickSchema, full: homeFullSchema }),
 };

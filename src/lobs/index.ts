@@ -7,7 +7,7 @@ import { travel } from "./travel";
 import type { FormKind, LobConfig, PricePeriod } from "./types";
 
 export { type FieldLabel, labelsOf } from "./build";
-export type { FieldSpec, FormKind, FormSectionSpec, LobConfig, PricePeriod } from "./types";
+export type { CoverSpec, FieldSpec, FormKind, FormSectionSpec, LobConfig, PricePeriod, QuoteSummary } from "./types";
 
 // The lines of business Brokwise sells, in menu order. Adding a line is one config file here plus PolicyDesk's
 // product schema: the pages under src/app/[lob] are shared.
@@ -72,8 +72,12 @@ export function periodOf(lob: LobConfig, cover: string): PricePeriod {
 }
 
 const PERIOD_WORDS: Record<PricePeriod, { total: string; price: string; note: string }> = {
-  year: { total: "Total a year", price: "a year", note: "Prices are yearly, in US dollars." },
-  trip: { total: "Total for this trip", price: "for this trip", note: "Prices are for the whole trip, in US dollars." },
+  year: { total: "Total a year", price: "a year", note: "Yearly prices in US dollars." },
+  trip: {
+    total: "Total for this trip",
+    price: "for this trip",
+    note: "Prices for the whole trip, in US dollars.",
+  },
 };
 
 /** The words for a cover's price: the total's label ("Total a year") and what follows a price ("for this trip"). */
@@ -82,9 +86,15 @@ export function priceWords(lob: LobConfig, cover: string): { total: string; pric
   return { total, price };
 }
 
-/** The plans page's line about prices: for the chosen cover, or for every cover of the line when none is chosen. */
+/**
+ * The plans page's line about prices: for the chosen cover (with the covers within it), or for every cover of the line
+ * when none is chosen.
+ */
 export function pricesNote(lob: LobConfig, cover = ""): string {
-  const periods = new Set((cover ? [cover] : lob.covers.map((c) => c.value)).map((c) => periodOf(lob, c)));
-  if (periods.size > 1) return "Prices are in US dollars, for a year or for the whole trip as each plan says.";
+  const shown = lob.covers.filter((c) => !cover || c.value === cover || c.within === cover).map((c) => c.value);
+  const periods = new Set((shown.length > 0 ? shown : [cover]).map((c) => periodOf(lob, c)));
+  if (periods.size > 1) {
+    return "Prices in US dollars, for a year or for the whole trip as each plan says.";
+  }
   return PERIOD_WORDS[[...periods][0] ?? "year"].note;
 }

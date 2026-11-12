@@ -2,6 +2,7 @@ import { Globe, Plane, Repeat, UserRound, Users } from "lucide-react";
 import { LIMITS, travelFullSchema, travelQuickSchema } from "@/lib/schemas";
 import { detailsBuilder, THIS_YEAR } from "./build";
 import { metaOf } from "./meta";
+import { countOf, dayOf, labelOf, present } from "./summary";
 import type { FieldSpec, LobConfig } from "./types";
 
 export const TRAVEL_REGION_OPTIONS = [
@@ -99,5 +100,21 @@ export const travel: LobConfig = {
     { value: "schengen", label: "Schengen", period: "trip" },
   ],
   bestValueCover: "annual_multi_trip",
+  forWhom: "your trip",
+  summary: (v) => {
+    const start = dayOf(v.startDate);
+    const end = dayOf(v.endDate);
+    return {
+      title: labelOf(TRAVEL_REGION_OPTIONS, v.destination) ?? "Your trip",
+      facts: present(
+        v.tripType === "single" && "single trip",
+        v.tripType === "annual" && "annual plan",
+        start && (v.tripType === "single" && end ? `${start} to ${end}` : `from ${start}`),
+        countOf(v.travellers, "traveller"),
+        /^\d+$/.test(v.oldestAge ?? "") && (v.travellers === "1" ? `age ${v.oldestAge}` : `oldest ${v.oldestAge}`),
+      ),
+      forWhom: v.tripType === "annual" ? "your year of trips" : "your trip",
+    };
+  },
   buildDetails: detailsBuilder({ short: travelQuickSchema, full: travelFullSchema }),
 };
