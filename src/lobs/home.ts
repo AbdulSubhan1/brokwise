@@ -15,12 +15,12 @@ export const home: LobConfig = {
     covered: [
       "Fire, flood, storm and burst pipes",
       "Theft and break-ins",
-      "A place to stay while your home is repaired",
+      "A place to stay while your home is repaired: included with building and contents, an add-on otherwise",
       "Accidental damage and valuables away from home as add-ons",
     ],
   },
   intros: {
-    full: "Tell us about your home and what is in it. It takes about 2 minutes.",
+    full: "Tell us about your home and what is in it. Your answers set the price. It takes about 2 minutes.",
     quick: "Tell us your city and a coordinator will call you to find a plan.",
   },
   quickSection: { title: "Your home", icon: House, fields: [city] },

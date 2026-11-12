@@ -1,4 +1,4 @@
-import { BadgeCheck, ClipboardList, CreditCard, Headset, Scale, ShieldCheck, Star, Users } from "lucide-react";
+import { BadgeCheck, ClipboardList, CreditCard, Headset, Scale, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { primaryButton, secondaryButton } from "@/components/ui/styles";
@@ -6,16 +6,16 @@ import { LOB_META } from "@/lobs/meta";
 
 const STEPS = [
   { icon: ClipboardList, title: "Tell us what to cover", body: "A short form about your car, trip, home or family." },
-  { icon: Scale, title: "Compare plans", body: "Prices from our partner insurers, with add-ons you choose." },
-  { icon: CreditCard, title: "Pay and meet your advisor", body: "Pay online and an advisor takes care of the documents." },
+  { icon: Scale, title: "Pick a plan", body: "Prices from our partner insurers, worked out from your answers." },
+  { icon: CreditCard, title: "Pay, then send documents", body: "Pay online, send a few documents, and your advisor issues the policy." },
 ] as const;
 
 // Made-up numbers for a demo broker.
 const TRUST = [
   { icon: Users, value: "12,400+", label: "customers helped" },
-  { icon: ShieldCheck, value: "18", label: "partner insurers" },
-  { icon: Star, value: "4.8 / 5", label: "average rating" },
-  { icon: Headset, value: "Personal", label: "coordinator for every request" },
+  { icon: ShieldCheck, value: "5", label: "partner insurers" },
+  { icon: BadgeCheck, value: "4", label: "lines of cover" },
+  { icon: Headset, value: "Real people", label: "coordinators and advisors" },
 ] as const;
 
 export default function HomePage() {

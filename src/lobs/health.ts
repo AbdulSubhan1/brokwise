@@ -29,7 +29,7 @@ export const health: LobConfig = {
     ],
   },
   intros: {
-    full: "Tell us who to cover and a little about you. It takes about 2 minutes.",
+    full: "Tell us who to cover and a little about you. Your answers set the price. It takes about 2 minutes.",
     quick: "Tell us who to cover and a coordinator will call you to find a plan.",
   },
   quickSection: { title: "Your cover", icon: Users, fields: [coverFor] },

@@ -37,7 +37,7 @@ export function PaymentForm({ lob, total }: { lob: string; total: number }) {
             aria-describedby={state.termsError ? "terms-error" : undefined}
             className="mt-0.5 size-5 shrink-0 accent-pine focus-visible:outline-none"
           />
-          <span>I agree to the terms and confirm my details are made up for this demo.</span>
+          <span>I confirm this is a demo and my details are made up.</span>
         </label>
         <FieldError id="terms-error" message={state.termsError} />
       </div>

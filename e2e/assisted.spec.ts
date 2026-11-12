@@ -8,7 +8,7 @@ import { dollars, usd } from "./helpers";
 const PD = `http://localhost:${process.env.POLICYDESK_PORT ?? 3070}`;
 const CHECKOUT = /^http:\/\/localhost:3072\/c\//;
 const THANK_YOU = /\/car\/thank-you(\?.*)?$/;
-const TERMS = "I agree to the terms and confirm my details are made up for this demo.";
+const TERMS = "I confirm this is a demo and my details are made up.";
 const PAY_LINK = /https?:\/\/[^\s"'<>]+\/pay\/[A-Za-z0-9_-]{43}/;
 
 /** A PolicyDesk tab in its own browser context, signed in as the admin (who sees every department's opportunities). */
