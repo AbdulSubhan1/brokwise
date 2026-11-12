@@ -39,6 +39,8 @@ below says the decision, why it matters in a real broker, and where it lives and
 | **A small design system** | `src/components/ui/`: Select, DateField, RadioCards, Stepper, Badge, Card, SectionHeading, shared focus and button styles. Every form is drawn from these, so the four lines look and behave the same. | `date-field.test.ts`, `stepper.test.ts` |
 | **Native controls under the styling** | Selects stay native selects (phone pickers, screen readers); choice cards are real radios stretched over the card; dates are three labelled selects in a fieldset, still sent as one ISO value, and rebuilt on the server when JavaScript is off. | `actions.test.ts`, e2e specs |
 | **Accessible by default** | Decorative icons `aria-hidden`; icon-only buttons labelled; visible focus rings; the progress bar marks `aria-current="step"`; the mobile menu is a modal `<dialog>` (focus trap, Escape); motion respects reduced-motion; mobile-first layouts with no `max-*` breakpoints. | review, `stepper.test.ts` |
+| **Errors you can act on** | An error summary takes focus after a failed send and links each mistake to its field; required messages are derived from each field's label in the line config, not hand-written per line; plan buttons have unique accessible names with plan and price. | `lobs.test.ts`, `actions.test.ts`, `e2e/leads.spec.ts`, `e2e/plans.spec.ts` |
+| **Config decides the wording** | How long a price runs (a year, or one trip) is a property of the cover in `src/lobs`, so the plan cards, the plans note and the payment total follow it with no per-page checks. | `lobs.test.ts`, `e2e/lobs.spec.ts` |
 
 ## Payments
 

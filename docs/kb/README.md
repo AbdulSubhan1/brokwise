@@ -292,3 +292,16 @@ date rules (`travel-dates.test.ts`), `buildDetails` per line (`src/lobs/lobs.tes
 paid on the fake checkout with a home and travel advisor, a home call-back with a home and travel
 coordinator, health plans with the included wellness check-up, an unknown line, and `/car/details`. The
 older specs fill the new date and choice controls.
+
+## UX quick wins (after step 6)
+
+Small fixes from a UX audit of the live site.
+
+| Where | What changes |
+| --- | --- |
+| Header contact badge | Names the person: "Hina Malik" over "Your coordinator" (first name only on mobile), or "Help desk" when nobody is assigned. The open card shows the name, the role, and **Call** and **Email** buttons. A person's own email is their PolicyDesk login, so it never shows on the website: **Email** writes to help@brokwise.test with the subject "For Hina Malik: CAR-XXXXXXX-Q1" (the quote reference, or the lead reference before a plan is chosen), and the help desk passes it on. |
+| Journey forms | After a send with mistakes, an error summary at the top ("Fix 3 things to see your prices", or "… to send your request" on the quick form) takes focus; each mistake is a link that moves to its field. "This field is required." is gone: each field says what it needs ("Enter your date of birth.", "Choose your car model."), worked out from its label in `src/lobs` (a field config can set its own `required` message, as travel's "Choose how many people are travelling." does). |
+| Date selects | "Day", "Month" and "Year" show once, as the select's placeholder (the labels are for screen readers only), and a date lines up with the text field beside it. |
+| `/<line>/payment` | Now "Review and pay": selecting a plan comes straight here. It shows the insurer and plan, the cover, each line and the total, one quote reference, "Change plan" and the Pay form. `/<line>/selected` ("Your choice is saved") is gone and redirects here, so old links still work. |
+| `/<line>/plans` | Each **Select** button's accessible name says which plan and price it picks ("Select Northwind Essential, $110 for this trip"). |
+| Price wording | A cover in `src/lobs` can say `period: "trip"` (travel's single trip and Schengen). Those plans say "Total for this trip"; the rest "Total a year". The plans page note follows the cover filter, with a mixed note when travel shows every cover. |
