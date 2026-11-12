@@ -6,6 +6,8 @@ PolicyDesk (an insurance CRM) as its back office. All people, insurers and numbe
 
 Pages in this folder:
 - this overview: what Brokwise is, the three systems, the journeys and what steps 1 to 5 ship;
+- [engineering-highlights.md](engineering-highlights.md): the decisions beyond "it works" (security,
+  payments, business rules, delivery) and where each is tested;
 - [future-scope.md](future-scope.md): what is planned later and what triggers it.
 
 The full design is in [`docs/superpowers/specs/2026-11-11-brokwise-design.md`](../superpowers/specs/2026-11-11-brokwise-design.md).
