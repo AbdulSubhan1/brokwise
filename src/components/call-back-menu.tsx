@@ -46,6 +46,8 @@ export function CallBackMenu() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
+        data-pulse-event="callback_menu_opened"
+        data-pulse-label="hero"
         className={`${secondaryButton} w-full sm:w-auto md:w-full lg:w-auto`}
       >
         Ask for a call back
@@ -66,6 +68,8 @@ export function CallBackMenu() {
               <Link
                 href={`/${slug}/quick`}
                 onClick={() => setOpen(false)}
+                data-pulse-event="callback_line_chosen"
+                data-pulse-label={slug}
                 className={`flex items-center gap-3 rounded-xl p-2.5 font-semibold text-ink hover:bg-paper ${focusRing}`}
               >
                 <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-lg bg-pine-soft text-pine">

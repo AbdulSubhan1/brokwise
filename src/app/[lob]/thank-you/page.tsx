@@ -87,7 +87,7 @@ function Paid({
       <SiteHeader aside={<ContactCard person={contactOf({ contact: advisor }, order.quoteReference)} />} />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
         <Stepper current="done" />
-        <PulseEvent name="payment_succeeded" />
+        <PulseEvent name="payment_succeeded" label={lob.slug} />
         <div className="flex flex-col gap-3">
           <SuccessMark />
           <p className="font-semibold text-pine">{lob.title}</p>
@@ -152,7 +152,7 @@ function Paid({
           />
         </Card>
 
-        <Link href="/" className={`w-fit ${textLink}`}>
+        <Link href="/" data-pulse-event="back_home_clicked" data-pulse-label="thank you" className={`w-fit ${textLink}`}>
           Back to home
         </Link>
       </main>

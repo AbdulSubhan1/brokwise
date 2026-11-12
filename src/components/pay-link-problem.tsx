@@ -28,7 +28,12 @@ export function PayLinkProblem({ title, body }: { title: string; body: string })
           <ul className="mt-3 flex flex-col gap-2">
             <li className="flex items-center gap-2">
               <Mail aria-hidden className="size-4 text-muted" />
-              <a href={`mailto:${HELP_DESK.email}`} className="text-pine underline underline-offset-2">
+              <a
+                href={`mailto:${HELP_DESK.email}`}
+                data-pulse-event="help_desk_emailed"
+                data-pulse-label="pay link problem"
+                className="text-pine underline underline-offset-2"
+              >
                 {HELP_DESK.email}
               </a>
             </li>
@@ -36,6 +41,8 @@ export function PayLinkProblem({ title, body }: { title: string; body: string })
               <Phone aria-hidden className="size-4 text-muted" />
               <a
                 href={`tel:${HELP_DESK.phone.replace(/[^\d+]/g, "")}`}
+                data-pulse-event="help_desk_called"
+                data-pulse-label="pay link problem"
                 className="text-pine underline underline-offset-2"
               >
                 {HELP_DESK.phone}
@@ -44,7 +51,7 @@ export function PayLinkProblem({ title, body }: { title: string; body: string })
           </ul>
         </Card>
 
-        <Link href="/" className={`w-fit ${textLink}`}>
+        <Link href="/" data-pulse-event="back_home_clicked" data-pulse-label="pay link problem" className={`w-fit ${textLink}`}>
           Back to home
         </Link>
       </main>

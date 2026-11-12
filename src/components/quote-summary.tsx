@@ -42,7 +42,12 @@ export function QuoteSummary({
           Quote <span className="font-mono tracking-wide text-ink">{reference}</span>
         </p>
       )}
-      <Link href={editHref} className={`${textLink} inline-flex min-h-11 items-center md:min-h-0`}>
+      <Link
+        href={editHref}
+        data-pulse-event="details_edit_clicked"
+        data-pulse-label={editHref}
+        className={`${textLink} inline-flex min-h-11 items-center md:min-h-0`}
+      >
         Edit details
       </Link>
     </section>

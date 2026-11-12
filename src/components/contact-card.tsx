@@ -50,6 +50,8 @@ export function ContactCard({ person }: { person: ContactPerson }) {
         aria-expanded={open}
         aria-controls={cardId}
         onClick={() => setOpen((v) => !v)}
+        data-pulse-event="contact_card_opened"
+        data-pulse-label={person.role}
         className="flex items-center gap-2 rounded-full border border-line bg-paper py-1 pr-3 pl-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
       >
         <span
@@ -78,6 +80,8 @@ export function ContactCard({ person }: { person: ContactPerson }) {
           <a
             href={`tel:${person.phone.replace(/[^\d+]/g, "")}`}
             aria-label={`Call ${person.name} on ${person.phone}`}
+            data-pulse-event="contact_called"
+            data-pulse-label={person.role}
             className={primaryButton}
           >
             <Phone aria-hidden className="size-4" />
@@ -85,6 +89,8 @@ export function ContactCard({ person }: { person: ContactPerson }) {
           </a>
           <a
             href={person.emailHref}
+            data-pulse-event="contact_emailed"
+            data-pulse-label={person.role}
             aria-label={person.viaHelpDesk ? `Email ${person.name} through the help desk` : `Email the ${person.name}`}
             className={secondaryButton}
           >

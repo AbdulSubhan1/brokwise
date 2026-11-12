@@ -15,7 +15,13 @@ export function LoadError({ title, body, retry }: { title: string; body: string;
         </span>
         <h1 className="text-2xl font-bold md:text-3xl">{title}</h1>
         <p className="text-muted">{body}</p>
-        <button type="button" onClick={() => retry()} className={`${primaryButton} w-fit`}>
+        <button
+          type="button"
+          onClick={() => retry()}
+          data-pulse-event="retry_clicked"
+          data-pulse-label={title}
+          className={`${primaryButton} w-fit`}
+        >
           <RotateCcw aria-hidden className="size-5" />
           Try again
         </button>

@@ -85,7 +85,12 @@ async function Payment({ params }: { params: Promise<{ lob: string }> }) {
                 Your plan
               </h2>
             )}
-            <Link href={`/${lob.slug}/plans`} className={`shrink-0 text-sm ${textLink}`}>
+            <Link
+              href={`/${lob.slug}/plans`}
+              data-pulse-event="plan_change_clicked"
+              data-pulse-label={lob.slug}
+              className={`shrink-0 text-sm ${textLink}`}
+            >
               Change plan
             </Link>
           </div>

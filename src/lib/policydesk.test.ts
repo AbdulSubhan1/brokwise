@@ -5,7 +5,10 @@ vi.mock("next/headers", () => ({
   headers: async () => new Headers({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" }),
 }));
 
+vi.mock("./pulse", () => ({ reportApiCall: vi.fn() }));
+
 const { createOpportunity, openPayLink, saveSelection, startPayment } = await import("./policydesk");
+const { reportApiCall } = await import("./pulse");
 
 const ID = "0b0e3a5e-8f8d-4c3c-9a43-2b8f7c1d2e3f";
 const TOKEN = "q3Zt-Vb_8xY2nLm4Kp0RwE7sHdJfGcA1uTiOeN5yB9Q";
@@ -35,6 +38,7 @@ beforeEach(() => {
 
 afterEach(() => {
   fetchMock.mockReset();
+  vi.mocked(reportApiCall).mockReset();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
 });
@@ -68,5 +72,29 @@ describe("429 from PolicyDesk", () => {
     });
     await expect(startPayment(ID)).resolves.toEqual({ ok: false, status: 429, code: "rate_limited" });
     await expect(openPayLink(TOKEN)).resolves.toEqual({ ok: false, status: 429, code: "rate_limited" });
+  });
+});
+
+describe("Pulse API log", () => {
+  it("reports each call's method, host, path, status and time, never the body", async () => {
+    fetchMock.mockResolvedValue(tooMany());
+    await createOpportunity(LEAD);
+    expect(reportApiCall).toHaveBeenCalledWith({
+      method: "POST",
+      host: "localhost:3070",
+      path: "/api/website/v1/opportunities",
+      status: 429,
+      ms: expect.any(Number),
+      error: undefined,
+    });
+    expect(JSON.stringify(vi.mocked(reportApiCall).mock.calls)).not.toContain("Ayesha");
+  });
+
+  it("reports a call that got no answer, with the error", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    await createOpportunity(LEAD);
+    expect(reportApiCall).toHaveBeenCalledWith(
+      expect.objectContaining({ status: null, error: "TypeError: fetch failed" }),
+    );
   });
 });

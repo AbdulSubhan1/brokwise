@@ -42,7 +42,7 @@ async function Received({ params }: { params: Promise<{ lob: string }> }) {
       <SiteHeader aside={<ContactCard person={contactOf(view)} />} />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
         <Stepper current="plan" />
-        <PulseEvent name="callback_requested" />
+        <PulseEvent name="callback_requested" label={lob.slug} />
         <div className="flex flex-col gap-3">
           <SuccessMark />
           <p className="font-semibold text-pine">{lob.title}</p>
@@ -61,7 +61,12 @@ async function Received({ params }: { params: Promise<{ lob: string }> }) {
           {view.lead ? (
             <div className="mt-2">
               <p className="text-muted">Your plans are ready.</p>
-              <Link href={`/${lob.slug}/plans`} className={`${primaryButton} mt-4`}>
+              <Link
+                href={`/${lob.slug}/plans`}
+                data-pulse-event="plans_opened"
+                data-pulse-label={`${lob.slug}: request received`}
+                className={`${primaryButton} mt-4`}
+              >
                 <ListChecks aria-hidden className="size-5" />
                 See your plans
               </Link>
@@ -86,7 +91,7 @@ async function Received({ params }: { params: Promise<{ lob: string }> }) {
           </p>
         </Card>
 
-        <Link href="/" className={`w-fit ${textLink}`}>
+        <Link href="/" data-pulse-event="back_home_clicked" data-pulse-label="request received" className={`w-fit ${textLink}`}>
           Back to home
         </Link>
       </main>

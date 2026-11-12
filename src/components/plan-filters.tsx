@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, useId } from "react";
 import { plansHref, type Sort, SORTS } from "@/lib/plan-list";
+import { trackPulse } from "@/lib/pulse-client";
 import { Select } from "./ui/select";
 import { focusRing, secondaryButton } from "./ui/styles";
 
@@ -42,6 +43,10 @@ export function PlanFilters({
     const covers = data.getAll("cover").map(String);
     const chosen = SORTS.find((s) => s.value === data.get("sort"))?.value ?? "price";
     router.replace(plansHref(lob, covers.at(-1) ?? "", chosen), { scroll: false });
+    // The select and the narrower-cover box change the list without a click on a link
+    const field = (e.target as HTMLInputElement).name;
+    if (field === "sort") trackPulse("plans_sorted", `${lob}: ${chosen}`);
+    if (field === "cover") trackPulse("plans_filtered", `${lob}: ${covers.at(-1) || "all covers"}`);
   }
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -86,6 +91,8 @@ export function PlanFilters({
                     href={plansHref(lob, t.value, sort)}
                     aria-current={active ? "page" : undefined}
                     scroll={false}
+                    data-pulse-event="plans_filtered"
+                    data-pulse-label={`${lob}: ${t.label}`}
                     className={`flex min-h-10 w-full items-center justify-center rounded-lg px-2 text-center text-sm leading-tight md:px-4 md:text-base md:whitespace-nowrap ${focusRing} ${
                       active ? "bg-card font-bold text-ink shadow-sm" : "font-semibold text-ink/80 hover:bg-card/60"
                     }`}

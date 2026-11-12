@@ -42,7 +42,14 @@ export function PaymentForm({ lob, total }: { lob: string; total: number }) {
           />
           <span>
             I agree to the{" "}
-            <a href="/terms" target="_blank" rel="noreferrer" className={textLink}>
+            <a
+              href="/terms"
+              data-pulse-event="terms_opened"
+              data-pulse-label="payment"
+              target="_blank"
+              rel="noreferrer"
+              className={textLink}
+            >
               terms and conditions
             </a>{" "}
             and confirm my details are made up for this demo.
@@ -57,6 +64,8 @@ export function PaymentForm({ lob, total }: { lob: string; total: number }) {
         <button
           type="submit"
           disabled={pending}
+          data-pulse-event="pay_clicked"
+          data-pulse-label={lob}
           aria-describedby="pay-note"
           className={`${primaryButton} w-full text-base md:w-auto md:self-start`}
         >

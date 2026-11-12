@@ -82,6 +82,8 @@ async function Lob({ params }: Pick<PageProps<"/[lob]">, "params">) {
               <li key={href}>
                 <Link
                   href={href}
+                  data-pulse-event="journey_chosen"
+                  data-pulse-label={`${lob.slug}: ${title}`}
                   className={`group flex h-full flex-col rounded-2xl border-2 p-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine ${
                     primary ? "border-pine bg-card hover:bg-pine-soft" : "border-line bg-card hover:border-pine"
                   }`}

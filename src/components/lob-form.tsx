@@ -83,7 +83,13 @@ export function LobForm({
       ))}
       {turnstileSiteKey && <Turnstile siteKey={turnstileSiteKey} />}
       <FormError message={state.formError} />
-      <SubmitButton pending={pending}>{SUBMIT[form]}</SubmitButton>
+      <SubmitButton
+        pending={pending}
+        pulseEvent={form === "full" ? "quote_form_submitted" : "callback_form_submitted"}
+        pulseLabel={slug}
+      >
+        {SUBMIT[form]}
+      </SubmitButton>
     </form>
   );
 }

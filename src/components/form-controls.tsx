@@ -97,9 +97,26 @@ export function FormSection({ title, icon, children }: { title: string; icon?: L
   );
 }
 
-export function SubmitButton({ pending, children }: { pending: boolean; children: ReactNode }) {
+/** `pulseEvent` and `pulseLabel` name the click in Pulse (data-pulse-event / data-pulse-label). */
+export function SubmitButton({
+  pending,
+  children,
+  pulseEvent,
+  pulseLabel,
+}: {
+  pending: boolean;
+  children: ReactNode;
+  pulseEvent?: string;
+  pulseLabel?: string;
+}) {
   return (
-    <button type="submit" disabled={pending} className={`${primaryButton} w-full text-base md:w-auto md:self-start`}>
+    <button
+      type="submit"
+      disabled={pending}
+      data-pulse-event={pulseEvent}
+      data-pulse-label={pulseLabel}
+      className={`${primaryButton} w-full text-base md:w-auto md:self-start`}
+    >
       {pending && <LoaderCircle aria-hidden className="size-5 animate-spin motion-reduce:animate-none" />}
       {pending ? "Sending…" : children}
     </button>

@@ -104,11 +104,26 @@ Brokwise reports to [Pulse](https://github.com/AbdulSubhan1/monitor), my small m
 
 | What | Detail | Where |
 | --- | --- | --- |
-| **Page views and browser errors** | One `next/script` tag (`afterInteractive`): cookie-free, no ids, paths without query strings. | `src/app/layout.tsx` |
-| **Named events** | `callback_requested` on the request-received page, `payment_succeeded` on the paid thank-you page. An event fired before the beacon loads waits in its queue. | `src/components/pulse-event.tsx` |
+| **Page views, browser errors, Core Web Vitals** | One `next/script` tag (`afterInteractive`): cookie-free, no ids, paths without query strings. The same script measures LCP, INP, CLS, FCP and TTFB for real visitors. | `src/app/layout.tsx` |
+| **Every CTA is an event** | `data-pulse-event` (what happened) + `data-pulse-label` (which line, plan or where), counted on click with no JavaScript in the components. The vocabulary is below. | components, pages |
+| **Outcomes, not just clicks** | `callback_requested` on the request-received page and `payment_succeeded` on the paid thank-you page (labelled with the line); `plans_sorted` / `plans_filtered` from the filter form. Events fired before the beacon loads wait in its queue. | `src/components/pulse-event.tsx`, `src/lib/pulse-client.ts` |
+| **API log** | Every PolicyDesk call (method, host, path, status, time, error) goes to Pulse from the one `call()` helper, after the response, never with the body. Pulse groups by route (`/opportunities/:id/plans`). | `src/lib/policydesk.ts`, `policydesk.test.ts` |
 | **Every server error** | Next.js `onRequestError` sends the error, route and digest with no code in each route. | `src/instrumentation.ts` |
 | **A key log per lead** | "Lead submitted" with product and form, sent with `after()` so the visitor never waits. | `src/app/[lob]/actions.ts` |
 | **Can't break the site** | Off until `MONITOR_LOG_TOKEN` is set; 2-second timeout; every failure ignored. The token is this site's own, so it can't write logs as another project. | `src/lib/pulse.ts`, `pulse.test.ts` |
+
+**Event vocabulary** (name · label):
+
+| Where | Events |
+| --- | --- |
+| Home | `choose_insurance_clicked` · hero, `line_selected` · line, `callback_menu_opened` · hero, `callback_line_chosen` · line |
+| Line page | `journey_chosen` · "car: …" (full form or call back) |
+| Forms | `quote_form_submitted` / `callback_form_submitted` · line; outcome `callback_requested` · line |
+| Plans | `plan_selected` · "line: plan", `plan_extras_toggled` · "line: plan", `more_plans_shown` · line, `plans_filtered`, `plans_sorted` |
+| Payment | `pay_clicked` · line, `plan_change_clicked` · line, `terms_opened` · payment; outcome `payment_succeeded` · line |
+| Return visits | `journey_resumed` · "line: step", `details_edit_clicked`, `plans_opened` |
+| Help | `contact_card_opened` / `contact_called` / `contact_emailed` · role, `help_desk_called` / `help_desk_emailed` · where |
+| Navigation | `nav_clicked` · target, `nav_menu_opened` · desktop or mobile, `back_home_clicked` · page, `retry_clicked` · error |
 
 ## Numbers (end of step 5)
 

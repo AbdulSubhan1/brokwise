@@ -21,6 +21,8 @@ export default function NotFound() {
             <li key={slug}>
               <Link
                 href={`/${slug}`}
+                data-pulse-event="line_selected"
+                data-pulse-label={`not found: ${slug}`}
                 className="flex items-center gap-3 rounded-2xl border border-line bg-card p-4 font-semibold hover:border-pine focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
               >
                 <span aria-hidden className="grid size-10 place-items-center rounded-xl bg-pine-soft text-pine">
@@ -31,7 +33,11 @@ export default function NotFound() {
             </li>
           ))}
         </ul>
-        <Link href="/" className="w-fit font-semibold text-pine underline underline-offset-2">
+        <Link
+          href="/"
+          data-pulse-event="back_home_clicked"
+          data-pulse-label="not found"
+          className="w-fit font-semibold text-pine underline underline-offset-2">
           Back to home
         </Link>
       </main>
