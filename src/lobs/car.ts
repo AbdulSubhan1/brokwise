@@ -2,6 +2,7 @@ import { Car, Mail, UserRound } from "lucide-react";
 import { carFullSchema, carQuickSchema, LIMITS } from "@/lib/schemas";
 import { detailsBuilder, THIS_YEAR, YES_NO } from "./build";
 import { metaOf } from "./meta";
+import { ageOn, countOf, present, usdOf } from "./summary";
 import type { LobConfig } from "./types";
 
 export const car: LobConfig = {
@@ -62,8 +63,26 @@ export const car: LobConfig = {
   covers: [
     { value: "third_party", label: "Third party" },
     { value: "comprehensive", label: "Comprehensive" },
-    { value: "comprehensive_agency", label: "Agency repair" },
+    // Agency repair is comprehensive cover repaired at the agency: counted under it, with its own checkbox.
+    { value: "comprehensive_agency", label: "Agency repair", within: "comprehensive", only: "Agency repair only" },
   ],
   bestValueCover: "comprehensive",
+  forWhom: "your car",
+  summary: (v, today) => {
+    const age = ageOn(v.dateOfBirth, today);
+    const licence = countOf(v.yearsLicensed, "year");
+    return {
+      title: present(v.make, v.model, v.year).join(" ") || "Your car",
+      facts: present(
+        v.gccSpec === "yes" && "GCC spec",
+        v.gccSpec === "no" && "not GCC spec",
+        usdOf(v.carValue) && `worth ${usdOf(v.carValue)}`,
+        age !== undefined && `driver ${age}`,
+        licence && `licence ${licence}`,
+        v.city,
+      ),
+      forWhom: v.model ? `your ${v.model}` : "your car",
+    };
+  },
   buildDetails: detailsBuilder({ short: carQuickSchema, full: carFullSchema }),
 };

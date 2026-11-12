@@ -46,8 +46,19 @@ export type FieldSpec = { showWhen?: ShowWhen } & (
 /** How long a plan's price runs: a year, or the one trip it covers. */
 export type PricePeriod = "year" | "trip";
 
-/** A cover of the plans filter. A price is for a year unless the cover says `period: "trip"`. */
-export type CoverSpec = Option & { period?: PricePeriod };
+/**
+ * A cover of the plans filter. A price is for a year unless the cover says `period: "trip"`. A cover `within` another
+ * is a narrower kind of it (agency repair is comprehensive cover): the filter counts it under that cover and offers a
+ * "`only`" checkbox for it instead of a tab of its own.
+ */
+export type CoverSpec = Option & { period?: PricePeriod; within?: string; only?: string };
+
+/**
+ * What the plans page's summary says was quoted, from the full form's answers: a title ("Toyota Corolla 2021"), the
+ * other answers that set the price ("worth $18,000", "driver 34"), and who or what the plans are for ("your Corolla").
+ * An answer the visitor didn't give is left out.
+ */
+export type QuoteSummary = { title: string; facts: string[]; forWhom: string };
 
 export type FormSectionSpec = { title: string; icon: LucideIcon; fields: readonly FieldSpec[] };
 
@@ -78,6 +89,10 @@ export type LobConfig = {
   covers: readonly CoverSpec[];
   /** The widest cover of the line: its cheapest plan is tagged "Best value". */
   bestValueCover: string;
+  /** Who the plans are for when the answers aren't known ("your car"). */
+  forWhom: string;
+  /** The full form's answers → the plans page's summary. `today` is an ISO day, for ages. */
+  summary(values: FormValues, today: string): QuoteSummary;
   /** The form's raw values → PolicyDesk's request (contact and details), or the errors by field. */
   buildDetails(form: FormKind, values: FormValues): BuildResult;
 };

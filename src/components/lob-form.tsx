@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import { sendFullForm, sendQuickForm } from "@/app/[lob]/actions";
-import { errorKeyOf, errorsLeft, type FormState } from "@/lib/form-state";
+import { errorKeyOf, errorsLeft, type FormState, type FormValues } from "@/lib/form-state";
 import { type FieldSpec, type FormKind, formSections, getLob, labelsOf } from "@/lobs";
 import { CarFields } from "./car-fields";
 import { MobileField } from "./contact-fields";
@@ -21,19 +21,22 @@ const SUBMIT = { short: "Call me back", full: "Get prices" } as const;
  * `turnstileSiteKey` is set only when Turnstile is on; then the form shows the check above its errors. After a send
  * with field mistakes, each field shows its message under itself and the first one is scrolled to and focused (a
  * screen reader reads its message from aria-describedby). A field's message goes away as soon as the visitor changes
- * that field; the next send checks everything again.
+ * that field; the next send checks everything again. `initialValues` are the visitor's earlier answers to this form
+ * ("Edit details" on the plans page), filled in to start with.
  */
 export function LobForm({
   slug,
   form,
   turnstileSiteKey,
+  initialValues,
 }: {
   slug: string;
   form: FormKind;
   turnstileSiteKey: string | null;
+  initialValues?: FormValues;
 }) {
   const lob = getLob(slug)!;
-  const { state: sent, action, pending, onSubmit } = useFormAction(ACTIONS[form]);
+  const { state: sent, action, pending, onSubmit } = useFormAction(ACTIONS[form], initialValues);
   // Fields changed since the last send, tied to that send's state so a new answer starts with none
   const [edited, setEdited] = useState<{ after: FormState; names: string[] }>({ after: sent, names: [] });
   const editedNames = edited.after === sent ? edited.names : [];

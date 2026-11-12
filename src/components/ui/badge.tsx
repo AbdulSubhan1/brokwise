@@ -5,6 +5,7 @@ const TONES = {
   pine: "bg-pine-soft text-pine-dark",
   saffron: "bg-saffron-soft text-ink",
   solid: "bg-pine text-white",
+  accent: "bg-saffron text-ink",
   neutral: "bg-paper text-muted border border-line",
 } as const;
 

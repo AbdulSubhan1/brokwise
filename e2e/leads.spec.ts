@@ -8,19 +8,23 @@ async function expectCoordinatorInHeader(page: Page) {
   // The footer has the help desk's email and number too, so look only in the header
   const header = page.getByRole("banner");
 
-  // The card opens on hover…
+  // The card opens on a click, not on hover…
   const email = header.getByRole("link", { name: /^Email .+ through the help desk$/ });
   await badge.hover();
+  await expect(email).toBeHidden();
+  await badge.click();
   await expect(email).toBeVisible();
   // The person's own (PolicyDesk login) email never shows: Email writes to the help desk, naming them.
   await expect(email).toHaveAttribute("href", /^mailto:help@brokwise\.test\?subject=For%20/);
   await expect(header.getByText(/@policydesk/)).toHaveCount(0);
   await expect(header.getByRole("link", { name: /^Call .+ on \+92/ })).toHaveAttribute("href", /^tel:\+92\d+$/);
 
-  // …and on keyboard focus.
-  await page.mouse.move(0, 0);
+  // …closes on a click outside, and opens from the keyboard, not on focus alone.
+  await page.mouse.click(1, 300);
   await expect(email).toBeHidden();
   await badge.focus();
+  await expect(email).toBeHidden();
+  await page.keyboard.press("Enter");
   await expect(email).toBeVisible();
 }
 
@@ -70,7 +74,7 @@ test("get prices now → plans page shows CAR- reference and a coordinator", asy
 
   // The full form creates a lead, so the visitor goes straight on to the plans (step 2).
   await expect(page).toHaveURL("/car/plans", { timeout: 30_000 });
-  await expect(page.getByRole("heading", { name: "Choose your plan" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^\d+ plans for your Civic$/);
   await expect(page.getByText(/^CAR-[A-Z2-9]{7}$/)).toBeVisible();
   await expectCoordinatorInHeader(page);
 });

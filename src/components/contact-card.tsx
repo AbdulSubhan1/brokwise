@@ -1,18 +1,32 @@
 "use client";
 
 import { Mail, Phone } from "lucide-react";
-import { type FocusEvent, useId, useRef, useState } from "react";
+import { type FocusEvent, useEffect, useId, useRef, useState } from "react";
 import type { ContactPerson } from "@/lib/contact";
 import { primaryButton, secondaryButton } from "./ui/styles";
 
 /**
  * Header badge with an initial avatar, the person's name (first name only on mobile) and their role; a card with Call
- * and Email buttons opens on hover, keyboard focus or tap. Email goes to the help desk inbox (see ContactPerson).
+ * and Email buttons opens and closes on a click, tap, Enter or Space on the badge, never on hover or focus alone. A click
+ * outside, Escape (focus goes back to the badge) or tabbing out of it closes it. Email goes to the help desk inbox (see
+ * ContactPerson).
  */
 export function ContactCard({ person }: { person: ContactPerson }) {
   const [open, setOpen] = useState(false);
   const cardId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  // A click or tap anywhere outside the badge and its card closes the card. Pointer events, as a tap on Safari doesn't
+  // move focus, so a blur alone would miss it.
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      if (!boxRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
 
   function onBlur(e: FocusEvent<HTMLDivElement>) {
     if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
@@ -20,10 +34,8 @@ export function ContactCard({ person }: { person: ContactPerson }) {
 
   return (
     <div
+      ref={boxRef}
       className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      onFocus={() => setOpen(true)}
       onBlur={onBlur}
       onKeyDown={(e) => {
         if (e.key === "Escape" && open) {

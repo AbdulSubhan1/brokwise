@@ -57,7 +57,7 @@ test("full journey: plans → pay on the fake checkout → thank-you shows paid 
   // After payment the header shows the advisor instead of the coordinator; Email goes through the help desk.
   const badge = page.getByRole("button", { name: "Your advisor" });
   await expect(badge).toBeVisible();
-  await badge.hover();
+  await badge.click();
   const email = page.getByRole("banner").getByRole("link", { name: /^Email .+ through the help desk$/ });
   await expect(email).toBeVisible();
   await expect(email).toHaveAttribute("href", /^mailto:help@brokwise\.test\?subject=For%20.+%3A%20CAR-[A-Z2-9]{7}-Q\d+$/);

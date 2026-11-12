@@ -2,18 +2,18 @@ import { User, UserRound, Users, UsersRound } from "lucide-react";
 import { healthFullSchema, healthQuickSchema, LIMITS } from "@/lib/schemas";
 import { detailsBuilder, THIS_YEAR, YES_NO } from "./build";
 import { metaOf } from "./meta";
+import { ageOn, countOf, labelOf, present } from "./summary";
 import type { FieldSpec, LobConfig } from "./types";
 
-const coverFor: FieldSpec = {
-  kind: "choice",
-  name: "coverFor",
-  label: "Who is covered?",
-  options: [
-    { value: "me", label: "Just me", icon: User },
-    { value: "me_spouse", label: "Me and my spouse", icon: UsersRound },
-    { value: "family", label: "My family", description: "With children", icon: Users },
-  ],
-};
+const COVER_FOR = [
+  { value: "me", label: "Just me", icon: User },
+  { value: "me_spouse", label: "Me and my spouse", icon: UsersRound },
+  { value: "family", label: "My family", description: "With children", icon: Users },
+] as const;
+
+const coverFor: FieldSpec = { kind: "choice", name: "coverFor", label: "Who is covered?", options: COVER_FOR };
+
+const FOR_WHOM: Record<string, string> = { me: "you", me_spouse: "you and your spouse", family: "your family" };
 
 export const health: LobConfig = {
   ...metaOf("health"),
@@ -75,5 +75,20 @@ export const health: LobConfig = {
     { value: "health_premium", label: "Premium" },
   ],
   bestValueCover: "health_premium",
+  forWhom: "you",
+  summary: (v, today) => {
+    const age = ageOn(v.dateOfBirth, today);
+    return {
+      title: labelOf(COVER_FOR, v.coverFor) ?? "Your health cover",
+      facts: present(
+        v.coverFor === "family" && countOf(v.children, "child", "children"),
+        age !== undefined && `you ${age}`,
+        v.preExisting === "yes" && "a pre-existing condition",
+        v.preExisting === "no" && "no pre-existing conditions",
+        v.city,
+      ),
+      forWhom: FOR_WHOM[v.coverFor ?? ""] ?? "you",
+    };
+  },
   buildDetails: detailsBuilder({ short: healthQuickSchema, full: healthFullSchema }),
 };

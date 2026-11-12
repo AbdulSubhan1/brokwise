@@ -246,13 +246,19 @@ describe("price period", () => {
     for (const slug of ["car", "home", "health"]) {
       const lob = getLob(slug)!;
       for (const c of lob.covers) expect(priceWords(lob, c.value).total).toBe("Total a year");
-      expect(pricesNote(lob)).toBe("Prices are yearly, in US dollars.");
+      expect(pricesNote(lob)).toBe("Yearly prices in US dollars.");
     }
   });
 
   it("the plans note follows the cover filter", () => {
-    expect(pricesNote(travel, "single_trip")).toBe("Prices are for the whole trip, in US dollars.");
-    expect(pricesNote(travel, "annual_multi_trip")).toBe("Prices are yearly, in US dollars.");
-    expect(pricesNote(travel)).toBe("Prices are in US dollars, for a year or for the whole trip as each plan says.");
+    expect(pricesNote(travel, "single_trip")).toBe("Prices for the whole trip, in US dollars.");
+    expect(pricesNote(travel, "annual_multi_trip")).toBe("Yearly prices in US dollars.");
+    expect(pricesNote(travel)).toBe("Prices in US dollars, for a year or for the whole trip as each plan says.");
+  });
+
+  it("a cover's note covers the covers within it", () => {
+    const car = getLob("car")!;
+    expect(pricesNote(car, "comprehensive")).toBe("Yearly prices in US dollars.");
+    expect(pricesNote(car, "comprehensive_agency")).toBe("Yearly prices in US dollars.");
   });
 });

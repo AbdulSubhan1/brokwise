@@ -7,6 +7,8 @@
   --color-ink: #17262b;
   --color-muted: #5b6b70;
   --color-line: #dcd8cc;
+  /* The plans page's cover filter track and the dividers inside a plan row: a step lighter than line. */
+  --color-sand: #ece9e0;
   --color-pine: #1d6b57;
   --color-pine-dark: #134a3c;
   --color-pine-soft: #e3efe9;

@@ -14,6 +14,7 @@ vi.mock("@/lib/journey", () => ({
   readJourney: vi.fn(async () => "0b0e3a5e-8f8d-4c3c-9a43-2b8f7c1d2e3f"),
   setJourney: vi.fn(async () => {}),
 }));
+vi.mock("@/lib/answers", () => ({ saveAnswers: vi.fn(async () => {}) }));
 vi.mock("@/lib/policydesk", () => ({
   RATE_LIMITED: "rate_limited",
   createOpportunity: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock("@/lib/policydesk", () => ({
 
 const { selectPlan, sendFullForm, sendQuickForm, startPaymentAction } = await import("./actions");
 const policydesk = await import("@/lib/policydesk");
+const { saveAnswers } = await import("@/lib/answers");
 const { BOT_CHECK_FAILED, EMPTY_FORM, TOO_MANY_REQUESTS, TURNSTILE_FIELD } = await import("@/lib/form-state");
 
 const createOpportunity = vi.mocked(policydesk.createOpportunity);
@@ -191,6 +193,26 @@ describe("lines of business", () => {
       ),
     ).rejects.toThrow("redirect:/health/plans");
     expect(createOpportunity.mock.calls[0][0].details).toMatchObject({ dateOfBirth: `${year}-03-05` });
+  });
+
+  it("a sent full form keeps its answers for the plans page, the built date included", async () => {
+    createOpportunity.mockResolvedValue(view("health"));
+    const year = new Date().getFullYear() - 30;
+    const answers = { ...CONTACT, coverFor: "me", dateOfBirth: `${year}-03-05`, city: "Karachi", preExisting: "no" };
+    await expect(sendFullForm(EMPTY_FORM, form(answers, "health"))).rejects.toThrow("redirect:/health/plans");
+    expect(saveAnswers).toHaveBeenCalledOnce();
+    const [lob, publicId, values, fields] = vi.mocked(saveAnswers).mock.calls[0];
+    expect([lob, publicId]).toEqual(["health", "0b0e3a5e-8f8d-4c3c-9a43-2b8f7c1d2e3f"]);
+    expect(values).toMatchObject(answers);
+    expect(fields).toEqual(expect.arrayContaining(Object.keys(answers)));
+  });
+
+  it("a call-back keeps no answers: it has no plans page", async () => {
+    createOpportunity.mockResolvedValue(view("travel"));
+    await expect(sendQuickForm(EMPTY_FORM, form({ ...CONTACT, destination: "asia" }, "travel"))).rejects.toThrow(
+      "redirect:/travel/received",
+    );
+    expect(saveAnswers).not.toHaveBeenCalled();
   });
 
   it("a PolicyDesk field error lands on the travel field with its message", async () => {
