@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { dollars, fillFullForm, usd } from "./helpers";
+import { dollars, fillFullForm, SELECT_PLAN, usd } from "./helpers";
 
 // Plans come from PolicyDesk's seeded made-up car plans, so these tests find cards by what they offer
 // (an unticked or a pre-ticked add-on) instead of by insurer or plan name.
@@ -38,9 +38,12 @@ async function totalOf(card: Locator): Promise<number> {
   return dollars(await card.getByTestId("plan-total").textContent());
 }
 
+/** After Select: the one review page before paying, with the saved total. */
 async function selectedTotal(page: Page): Promise<number> {
-  await expect(page).toHaveURL("/car/selected", { timeout: 30_000 });
-  return dollars(await page.getByTestId("selection-total").textContent());
+  await expect(page).toHaveURL("/car/payment", { timeout: 30_000 });
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { name: "Review and pay" })).toBeVisible({ timeout: 30_000 });
+  return dollars(await main.getByTestId("order-total").textContent());
 }
 
 test("full form → plans page lists plans cheapest first", async ({ page }) => {
@@ -58,8 +61,12 @@ test("full form → plans page lists plans cheapest first", async ({ page }) => 
   expect(prices.length).toBeGreaterThan(1);
   expect(prices).toEqual([...prices].sort((a, b) => a - b));
 
-  // Every card has its button; included add-ons are shown as "Included", not as checkboxes.
-  await expect(page.getByRole("button", { name: "Select this plan" })).toHaveCount(prices.length);
+  // Every card has its button, each named after its own plan and price.
+  const selects = page.getByRole("button", { name: SELECT_PLAN });
+  await expect(selects).toHaveCount(prices.length);
+  const names = await selects.evaluateAll((buttons) => buttons.map((b) => b.getAttribute("aria-label")));
+  expect(new Set(names).size).toBe(names.length);
+  await expect(selects.first()).toHaveText("Select");
 
   // The cover filter narrows the list to one kind of cover.
   await page.getByRole("link", { name: "Third party", exact: true }).click();
@@ -70,7 +77,7 @@ test("full form → plans page lists plans cheapest first", async ({ page }) => 
   expect(thirdParty).toBeLessThan(prices.length);
 });
 
-test("pick a plan with an optional add-on → selected page shows the same total as the card", async ({ page }) => {
+test("pick a plan with an optional add-on → review page shows the same total as the card", async ({ page }) => {
   await fillFullForm(page);
   const card = await cardWithAddOn(page, false);
   const before = await totalOf(card);
@@ -81,13 +88,14 @@ test("pick a plan with an optional add-on → selected page shows the same total
   const total = before + price;
   await expect(card.getByTestId("plan-total")).toHaveText(usd(total));
 
-  await card.getByRole("button", { name: "Select this plan" }).click();
+  // The button's name follows the ticked add-ons.
+  await expect(card.getByRole("button", { name: `, ${usd(total)} a year` })).toBeVisible();
+  await card.getByRole("button", { name: SELECT_PLAN }).click();
   expect(await selectedTotal(page)).toBe(total);
-  await expect(page.getByTestId("quote-reference")).toHaveText(/^CAR-[A-Z2-9]{7}-Q\d+$/);
-  await expect(page.getByRole("main").getByRole("link", { name: "Continue to payment" })).toHaveAttribute(
-    "href",
-    "/car/payment",
-  );
+  const main = page.getByRole("main");
+  await expect(main.getByTestId("quote-reference")).toHaveCount(1);
+  await expect(main.getByTestId("quote-reference")).toHaveText(/^CAR-[A-Z2-9]{7}-Q\d+$/);
+  await expect(main.getByRole("link", { name: "Change plan" })).toHaveAttribute("href", "/car/plans");
 });
 
 test("untick a pre-ticked add-on → total drops by its price", async ({ page }) => {
@@ -103,29 +111,29 @@ test("untick a pre-ticked add-on → total drops by its price", async ({ page })
   await expect(card.getByTestId("plan-total")).toHaveText(usd(total));
 
   // PolicyDesk prices the saved quote the same way.
-  await card.getByRole("button", { name: "Select this plan" }).click();
+  await card.getByRole("button", { name: SELECT_PLAN }).click();
   expect(await selectedTotal(page)).toBe(total);
 });
 
 test("change plan keeps one quote reference", async ({ page }) => {
   await fillFullForm(page);
   const firstName = await cards(page).nth(0).getByRole("heading").textContent();
-  await cards(page).nth(0).getByRole("button", { name: "Select this plan" }).click();
+  await cards(page).nth(0).getByRole("button", { name: SELECT_PLAN }).click();
   await selectedTotal(page);
-  const reference = await page.getByTestId("quote-reference").textContent();
+  const reference = await page.getByRole("main").getByTestId("quote-reference").textContent();
   expect(reference).toMatch(/^CAR-[A-Z2-9]{7}-Q\d+$/);
 
-  await page.getByRole("link", { name: "Change plan" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Change plan" }).click();
   await expect(page).toHaveURL("/car/plans");
   await expect(cards(page).nth(0).getByText("Your choice")).toBeVisible();
 
   const second = cards(page).nth(1);
   const secondName = await second.getByRole("heading").textContent();
   expect(secondName).not.toBe(firstName);
-  await second.getByRole("button", { name: "Select this plan" }).click();
+  await second.getByRole("button", { name: SELECT_PLAN }).click();
   await selectedTotal(page);
-  await expect(page.getByRole("heading", { name: secondName ?? "" })).toBeVisible();
-  await expect(page.getByTestId("quote-reference")).toHaveText(reference ?? "");
+  await expect(page.getByRole("main").getByRole("heading", { name: secondName ?? "" })).toBeVisible();
+  await expect(page.getByRole("main").getByTestId("quote-reference")).toHaveText(reference ?? "");
 });
 
 test("short-form journey opening /car/plans goes to /car/received", async ({ page }) => {
@@ -148,6 +156,15 @@ test("plans and selected pages without a cookie redirect to /car", async ({ page
   await page.context().clearCookies();
   await page.goto("/car/plans");
   await expect(page).toHaveURL("/car");
+  // The old "Your choice is saved" page now goes to the payment page, which needs the journey cookie.
   await page.goto("/car/selected");
   await expect(page).toHaveURL("/car");
+});
+
+test("an old /car/selected link opens the review-and-pay page", async ({ page }) => {
+  await fillFullForm(page);
+  await cards(page).first().getByRole("button", { name: SELECT_PLAN }).click();
+  const total = await selectedTotal(page);
+  await page.goto("/car/selected");
+  expect(await selectedTotal(page)).toBe(total);
 });

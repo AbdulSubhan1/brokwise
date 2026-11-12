@@ -147,7 +147,7 @@ test.describe.serial("assisted journey", () => {
     await page.goto(new URL(payLink).pathname);
     await expect(page).toHaveURL("/car/payment", { timeout: 30_000 });
     const pay = page.getByRole("main");
-    await expect(pay.getByRole("heading", { name: "Payment" })).toBeVisible({ timeout: 30_000 });
+    await expect(pay.getByRole("heading", { name: "Review and pay" })).toBeVisible({ timeout: 30_000 });
     await expect(pay.getByTestId("quote-reference")).toHaveText(/^CAR-[A-Z2-9]{7}-Q\d+$/);
     const total = dollars(await pay.getByTestId("order-total").textContent());
     expect(total).toBeGreaterThan(0);

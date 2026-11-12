@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { dollars, fillFullForm, usd } from "./helpers";
+import { dollars, fillFullForm, SELECT_PLAN, usd } from "./helpers";
 
 // PolicyDesk talks to its fake PaySandbox on port 3072 (see playwright.config.ts). Its hosted checkout page has two
 // buttons: "Pay" (completes the session and sends the signed webhook) and "Pay without webhook" (completes it only,
@@ -9,18 +9,15 @@ const CHECKOUT = /^http:\/\/localhost:3072\/c\//;
 const THANK_YOU = /\/car\/thank-you(\?.*)?$/;
 const TERMS = "I agree to the terms and confirm my details are made up for this demo.";
 
-/** Full form → first plan → selected page → payment page. Returns the saved total. */
+/** Full form → first plan → straight to the review-and-pay page. Returns the saved total. */
 async function openPayment(page: Page, email?: string): Promise<number> {
   await fillFullForm(page, email);
-  await page.getByRole("article").first().getByRole("button", { name: "Select this plan" }).click();
-  await expect(page).toHaveURL("/car/selected", { timeout: 30_000 });
-  const total = dollars(await page.getByTestId("selection-total").textContent());
-
-  await page.getByRole("main").getByRole("link", { name: "Continue to payment" }).click();
+  await page.getByRole("article").first().getByRole("button", { name: SELECT_PLAN }).click();
   await expect(page).toHaveURL("/car/payment", { timeout: 30_000 });
   // Next keeps the previous page hidden in the DOM, so look only in the visible main, after the page streams in
-  await expect(page.getByRole("main").getByRole("heading", { name: "Payment" })).toBeVisible({ timeout: 30_000 });
-  return total;
+  const main = page.getByRole("main");
+  await expect(main.getByRole("heading", { name: "Review and pay" })).toBeVisible({ timeout: 30_000 });
+  return dollars(await main.getByTestId("order-total").textContent());
 }
 
 /** Ticks the terms, presses Pay and lands on the fake hosted checkout. */
@@ -57,11 +54,13 @@ test("full journey: plans → pay on the fake checkout → thank-you shows paid 
   await expect(main.getByText(/^A receipt goes to s\*+k@example\.test$/)).toBeVisible();
   await expect(main.getByText(/^Your advisor .+ will contact you about documents\.$/)).toBeVisible();
 
-  // After payment the header shows the advisor instead of the coordinator.
+  // After payment the header shows the advisor instead of the coordinator; Email goes through the help desk.
   const badge = page.getByRole("button", { name: "Your advisor" });
   await expect(badge).toBeVisible();
   await badge.hover();
-  await expect(page.getByRole("banner").getByRole("link", { name: /@/ })).toBeVisible();
+  const email = page.getByRole("banner").getByRole("link", { name: /^Email .+ through the help desk$/ });
+  await expect(email).toBeVisible();
+  await expect(email).toHaveAttribute("href", /^mailto:help@brokwise\.test\?subject=For%20.+%3A%20CAR-[A-Z2-9]{7}-Q\d+$/);
 });
 
 test("pay without webhook → thank-you confirms after the re-check", async ({ page }) => {
