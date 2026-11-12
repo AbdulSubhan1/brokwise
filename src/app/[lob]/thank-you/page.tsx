@@ -8,6 +8,7 @@ import { PaymentPending } from "@/components/payment-pending";
 import { SiteHeader } from "@/components/site-header";
 import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
+import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 import { getOpportunity, getOrder, type OrderView } from "@/lib/policydesk";
 
 export const metadata: Metadata = { title: "Thank you", robots: { index: false } };
@@ -15,10 +16,10 @@ export const metadata: Metadata = { title: "Thank you", robots: { index: false }
 // Brokwise's people and help desk are in Pakistan, so the payment date is shown on their calendar.
 const PAID_ON = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "Asia/Karachi" });
 
-export default function ThankYouPage() {
+export default function ThankYouPage({ params }: PageProps<"/[lob]/thank-you">) {
   return (
     <Suspense fallback={<Loading />}>
-      <ThankYou />
+      <ThankYou params={params} />
     </Suspense>
   );
 }
@@ -34,23 +35,25 @@ function Loading() {
   );
 }
 
-async function ThankYou() {
+async function ThankYou({ params }: { params: Promise<{ lob: string }> }) {
+  const lob = await lobFrom(params);
   const publicId = await readJourney();
-  if (!publicId) redirect("/car");
+  if (!publicId) redirect(`/${lob.slug}`);
 
   const result = await getOrder(publicId);
   if (!result.ok) {
-    if (result.code === "no_lead") redirect("/car/received");
-    if (result.status === 404) redirect("/car");
+    if (result.code === "no_lead") redirect(`/${lob.slug}/received`);
+    if (result.status === 404) redirect(`/${lob.slug}`);
     throw new Error(`PolicyDesk answered ${result.status} (${result.code}) for the order`);
   }
   const { order, advisor } = result.data;
-  if (!order) redirect("/car/payment");
+  if (!order) redirect(`/${lob.slug}/payment`);
   if (order.status === "paid") return <Paid order={order} advisor={advisor} />;
 
   // Not confirmed yet: the coordinator still looks after the journey, so the header shows them.
   const view = await getOpportunity(publicId);
-  if (!view) redirect("/car");
+  if (!view) redirect(`/${lob.slug}`);
+  stayInOwnLine(view.opportunity.product, lob, "thank-you");
   return (
     <>
       <SiteHeader aside={<ContactCard person={contactOf(view)} />} />

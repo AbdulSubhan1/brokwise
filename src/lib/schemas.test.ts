@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { formFieldOf, fullFormSchema, quickFormSchema } from "./schemas";
+import { carFullSchema as fullFormSchema, carQuickSchema as quickFormSchema, formFieldOf } from "./schemas";
+
+const FIELDS = ["customerName", "email", "countryCode", "mobile", "city"];
 
 const quick = {
   customerName: "Ayesha Rahman",
@@ -94,10 +96,10 @@ describe("fullFormSchema", () => {
 
 describe("formFieldOf", () => {
   it("maps PolicyDesk field paths back to form fields", () => {
-    expect(formFieldOf("details.city")).toBe("city");
-    expect(formFieldOf("phone")).toBe("mobile");
-    expect(formFieldOf("customerName")).toBe("customerName");
-    expect(formFieldOf("details.unknown")).toBeNull();
-    expect(formFieldOf(undefined)).toBeNull();
+    expect(formFieldOf("details.city", FIELDS)).toBe("city");
+    expect(formFieldOf("phone", FIELDS)).toBe("mobile");
+    expect(formFieldOf("customerName", FIELDS)).toBe("customerName");
+    expect(formFieldOf("details.unknown", FIELDS)).toBeNull();
+    expect(formFieldOf(undefined, FIELDS)).toBeNull();
   });
 });

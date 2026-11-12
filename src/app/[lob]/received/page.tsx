@@ -6,14 +6,15 @@ import { ContactCard } from "@/components/contact-card";
 import { contactOf } from "@/lib/contact";
 import { SiteHeader } from "@/components/site-header";
 import { readJourney } from "@/lib/journey";
+import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 import { getOpportunity } from "@/lib/policydesk";
 
 export const metadata: Metadata = { title: "Request received", robots: { index: false } };
 
-export default function ReceivedPage() {
+export default function ReceivedPage({ params }: PageProps<"/[lob]/received">) {
   return (
     <Suspense fallback={<Loading />}>
-      <Received />
+      <Received params={params} />
     </Suspense>
   );
 }
@@ -29,13 +30,15 @@ function Loading() {
   );
 }
 
-async function Received() {
+async function Received({ params }: { params: Promise<{ lob: string }> }) {
+  const lob = await lobFrom(params);
   // Only the browser that sent the form holds a valid journey cookie; anything else goes back to the start,
   // without asking PolicyDesk about a guessed id.
   const publicId = await readJourney();
-  if (!publicId) redirect("/car");
+  if (!publicId) redirect(`/${lob.slug}`);
   const view = await getOpportunity(publicId);
-  if (!view) redirect("/car");
+  if (!view) redirect(`/${lob.slug}`);
+  stayInOwnLine(view.opportunity.product, lob, "received");
 
   return (
     <>
@@ -60,7 +63,7 @@ async function Received() {
           {view.lead ? (
             <p className="mt-2 text-muted">
               Your plans are ready.{" "}
-              <Link href="/car/plans" className="font-semibold text-pine underline underline-offset-2">
+              <Link href={`/${lob.slug}/plans`} className="font-semibold text-pine underline underline-offset-2">
                 See your plans
               </Link>
             </p>

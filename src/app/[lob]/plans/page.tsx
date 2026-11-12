@@ -10,15 +10,9 @@ import { contactOf } from "@/lib/contact";
 import { TOO_MANY_REQUESTS } from "@/lib/form-state";
 import { readJourney } from "@/lib/journey";
 import { getOpportunity, getPlans } from "@/lib/policydesk";
+import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
 export const metadata: Metadata = { title: "Choose your plan", robots: { index: false } };
-
-const COVERS = [
-  { value: "", label: "All" },
-  { value: "third_party", label: "Third party" },
-  { value: "comprehensive", label: "Comprehensive" },
-  { value: "comprehensive_agency", label: "Agency repair" },
-] as const;
 
 const ERRORS: Record<string, string> = {
   unavailable: "That choice is no longer available. Please pick again.",
@@ -26,10 +20,10 @@ const ERRORS: Record<string, string> = {
   rate_limited: TOO_MANY_REQUESTS,
 };
 
-export default function PlansPage({ searchParams }: PageProps<"/car/plans">) {
+export default function PlansPage({ params, searchParams }: PageProps<"/[lob]/plans">) {
   return (
     <Suspense fallback={<Loading />}>
-      <Plans searchParams={searchParams} />
+      <Plans params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
@@ -49,23 +43,26 @@ function one(value: string | string[] | undefined): string {
   return typeof value === "string" ? value : "";
 }
 
-async function Plans({ searchParams }: { searchParams: PageProps<"/car/plans">["searchParams"] }) {
+async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "params" | "searchParams">) {
+  const lob = await lobFrom(params);
   // Same gate as the received page: no valid journey cookie, no call to PolicyDesk.
   const publicId = await readJourney();
-  if (!publicId) redirect("/car");
+  if (!publicId) redirect(`/${lob.slug}`);
 
   const [view, result] = await Promise.all([getOpportunity(publicId), getPlans(publicId)]);
-  if (!view) redirect("/car");
+  if (!view) redirect(`/${lob.slug}`);
+  stayInOwnLine(view.opportunity.product, lob, "plans");
   if (!result.ok) {
     // A short-form journey has no lead yet, so no plans: its coordinator takes it from here.
-    if (result.code === "no_lead") redirect("/car/received");
-    if (result.status === 404) redirect("/car");
+    if (result.code === "no_lead") redirect(`/${lob.slug}/received`);
+    if (result.status === 404) redirect(`/${lob.slug}`);
     throw new Error(`PolicyDesk answered ${result.status} (${result.code}) for the plans`);
   }
 
-  const params = await searchParams;
-  const cover = COVERS.some((c) => c.value === one(params.cover)) ? one(params.cover) : "";
-  const error = ERRORS[one(params.error)];
+  const query = await searchParams;
+  const covers = [{ value: "", label: "All" }, ...lob.covers];
+  const cover = lob.covers.some((c) => c.value === one(query.cover)) ? one(query.cover) : "";
+  const error = ERRORS[one(query.error)];
   const plans = cover ? result.plans.filter((p) => p.cover === cover) : result.plans;
   const selection = view.selection;
 
@@ -74,7 +71,7 @@ async function Plans({ searchParams }: { searchParams: PageProps<"/car/plans">["
       <SiteHeader aside={<ContactCard person={contactOf(view)} />} />
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-pine uppercase">Car insurance</p>
+          <p className="text-sm font-semibold tracking-wide text-pine uppercase">{lob.title}</p>
           <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">Choose your plan</h1>
           <p className="mt-2 text-muted">Prices are yearly, in US dollars.</p>
           {view.lead && (
@@ -94,12 +91,12 @@ async function Plans({ searchParams }: { searchParams: PageProps<"/car/plans">["
 
         <nav aria-label="Filter by cover">
           <ul className="flex flex-wrap gap-2">
-            {COVERS.map((c) => {
+            {covers.map((c) => {
               const active = c.value === cover;
               return (
                 <li key={c.value || "all"}>
                   <Link
-                    href={c.value ? `/car/plans?cover=${c.value}` : "/car/plans"}
+                    href={c.value ? `/${lob.slug}/plans?cover=${c.value}` : `/${lob.slug}/plans`}
                     aria-current={active ? "page" : undefined}
                     scroll={false}
                     className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine ${
@@ -123,7 +120,7 @@ async function Plans({ searchParams }: { searchParams: PageProps<"/car/plans">["
             {plans.map((plan) => {
               const chosenIds = selection?.planId === plan.id ? selection.addOnIds : undefined;
               // The key changes when the saved choice does, so the card's ticks start again from it.
-              return <PlanCard key={`${plan.id}:${chosenIds?.join(",") ?? ""}`} plan={plan} chosenIds={chosenIds} />;
+              return <PlanCard key={`${plan.id}:${chosenIds?.join(",") ?? ""}`} lob={lob.slug} plan={plan} chosenIds={chosenIds} />;
             })}
           </div>
         )}

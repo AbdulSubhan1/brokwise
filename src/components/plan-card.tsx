@@ -1,7 +1,7 @@
 "use client";
 
 import { type FormEvent, useId, useState, useTransition } from "react";
-import { selectPlan } from "@/app/car/actions";
+import { selectPlan } from "@/app/[lob]/actions";
 import { formatUsd } from "@/lib/money";
 import { planTotal } from "@/lib/plan-total";
 import type { WebsitePlan } from "@/lib/policydesk";
@@ -11,7 +11,7 @@ import type { WebsitePlan } from "@/lib/policydesk";
  * total follows them as the visitor ticks. The form sends only the plan id and the ticked add-on ids.
  * `chosenIds` is set on the visitor's saved choice: the card is marked and those add-ons are ticked again.
  */
-export function PlanCard({ plan, chosenIds }: { plan: WebsitePlan; chosenIds?: number[] }) {
+export function PlanCard({ lob, plan, chosenIds }: { lob: string; plan: WebsitePlan; chosenIds?: number[] }) {
   const titleId = useId();
   const [pending, startTransition] = useTransition();
   const isChoice = chosenIds !== undefined;
@@ -78,6 +78,7 @@ export function PlanCard({ plan, chosenIds }: { plan: WebsitePlan; chosenIds?: n
       )}
 
       <form action={selectPlan} onSubmit={onSubmit} className="mt-5 flex flex-1 flex-col gap-4">
+        <input type="hidden" name="lob" value={lob} />
         <input type="hidden" name="planId" value={plan.id} />
 
         {plan.addOns.length > 0 && (

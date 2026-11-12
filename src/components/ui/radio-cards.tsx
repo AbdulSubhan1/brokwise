@@ -4,8 +4,9 @@ import { FieldError } from "./field-error";
 export type RadioCardOption = { value: string; label: string; description?: string; icon?: LucideIcon };
 
 /**
- * Big tappable choices for a handful of options (yes/no, trip type, who is covered). Real radio buttons inside
- * labels, so arrow keys, focus and screen readers behave as usual; the card shows the checked and focused states.
+ * Big tappable choices for a handful of options (yes/no, trip type, who is covered). Real radio buttons, invisible
+ * and stretched over their card, so taps, arrow keys, focus and screen readers behave as usual; the card shows the
+ * checked and focused states.
  */
 export function RadioCards({
   name,
@@ -45,7 +46,7 @@ export function RadioCards({
                   ? { checked: value === o.value, onChange: () => onChange?.(o.value) }
                   : { defaultChecked: defaultValue === o.value, onChange: () => onChange?.(o.value) })}
                 aria-describedby={descriptionId}
-                className="peer sr-only"
+                className="peer absolute inset-0 size-full cursor-pointer appearance-none rounded-xl opacity-0"
               />
               {Icon && (
                 <span

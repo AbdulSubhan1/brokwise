@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { SignJWT } from "jose";
+import { pickDate } from "./helpers";
 
 async function expectCoordinatorInHeader(page: Page) {
   const badge = page.getByRole("button", { name: "Your coordinator" });
@@ -53,7 +54,7 @@ test("get prices now → plans page shows CAR- reference and a coordinator", asy
   await page.getByRole("radio", { name: "Yes" }).check();
   await page.getByLabel("Car value (USD)").fill("15000");
   await page.getByLabel("Full name").fill("Mariam Siddiqui");
-  await page.getByLabel("Date of birth").fill("1988-06-15");
+  await pickDate(page, "Date of birth", "1988-06-15");
   await page.getByLabel("Nationality").fill("Pakistani");
   await page.getByLabel("City").fill("Karachi");
   await page.getByLabel("Years with a driving licence").fill("10");

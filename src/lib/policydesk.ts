@@ -10,26 +10,20 @@ import { SIGNATURE_HEADER, signRequest, TIMESTAMP_HEADER } from "./signature";
 const TIMEOUT_MS = 8_000;
 const BASE_PATH = "/api/website/v1";
 
-export type CarDetails = {
-  make: string;
-  model: string;
-  year: number;
-  gccSpec?: boolean;
-  carValue?: number;
-  dateOfBirth?: string;
-  nationality?: string;
-  city?: string;
-  yearsLicensed?: number;
-};
+/** The products the website sells, as PolicyDesk's WEBSITE_PRODUCTS (constants/website.ts). */
+export const WEBSITE_PRODUCTS = ["car", "travel", "home", "health"] as const;
+export type WebsiteProduct = (typeof WEBSITE_PRODUCTS)[number];
 
-export type OpportunityRequest = {
-  form: "short" | "full";
-  product: "car";
-  customerName: string;
-  email: string;
-  phone: string;
-  details: CarDetails;
-};
+/**
+ * A product's details as the forms build them (src/lib/schemas.ts); PolicyDesk checks them per product. A key the
+ * form left out is undefined, and JSON leaves it out of the request.
+ */
+export type Details = Record<string, string | number | boolean | undefined>;
+
+/** What a form gives PolicyDesk: the contact and the product's details. */
+export type LeadRequest = { customerName: string; email: string; phone: string; details: Details };
+
+export type OpportunityRequest = LeadRequest & { form: "short" | "full"; product: WebsiteProduct };
 
 export const ADD_ON_KINDS = ["included", "optional", "preselected"] as const;
 export type AddOnKind = (typeof ADD_ON_KINDS)[number];
@@ -50,7 +44,7 @@ const planSchema = z.object({
   ),
 });
 
-/** Mirrors PolicyDesk's WebsitePlan: one car plan card, prices in whole US dollars. */
+/** Mirrors PolicyDesk's WebsitePlan: one plan card, prices in whole US dollars. */
 export type WebsitePlan = z.infer<typeof planSchema>;
 
 const selectionSchema = z.object({
@@ -162,7 +156,7 @@ export type PlansResult = { ok: true; plans: WebsitePlan[] } | { ok: false; stat
 
 const plansSchema = z.object({ plans: z.array(planSchema) });
 
-/** The car plans for a journey, cheapest first. 409 `no_lead` when the journey has no lead (short form). */
+/** The plans of the journey's product, cheapest first. 409 `no_lead` when the journey has no lead (short form). */
 export async function getPlans(publicId: string): Promise<PlansResult> {
   let res: Response;
   let json: unknown;

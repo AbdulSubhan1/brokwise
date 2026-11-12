@@ -7,14 +7,15 @@ import { SiteHeader } from "@/components/site-header";
 import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
 import { formatUsd } from "@/lib/money";
+import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 import { getOpportunity } from "@/lib/policydesk";
 
 export const metadata: Metadata = { title: "Your choice", robots: { index: false } };
 
-export default function SelectedPage() {
+export default function SelectedPage({ params }: PageProps<"/[lob]/selected">) {
   return (
     <Suspense fallback={<Loading />}>
-      <Selected />
+      <Selected params={params} />
     </Suspense>
   );
 }
@@ -30,14 +31,16 @@ function Loading() {
   );
 }
 
-async function Selected() {
+async function Selected({ params }: { params: Promise<{ lob: string }> }) {
+  const lob = await lobFrom(params);
   const publicId = await readJourney();
-  if (!publicId) redirect("/car");
+  if (!publicId) redirect(`/${lob.slug}`);
   const view = await getOpportunity(publicId);
-  if (!view) redirect("/car");
-  if (!view.lead) redirect("/car/received");
+  if (!view) redirect(`/${lob.slug}`);
+  stayInOwnLine(view.opportunity.product, lob, "selected");
+  if (!view.lead) redirect(`/${lob.slug}/received`);
   const selection = view.selection;
-  if (!selection) redirect("/car/plans");
+  if (!selection) redirect(`/${lob.slug}/plans`);
 
   return (
     <>
@@ -83,13 +86,13 @@ async function Selected() {
 
         <div className="flex flex-col gap-3 md:flex-row">
           <Link
-            href="/car/payment"
+            href={`/${lob.slug}/payment`}
             className="rounded-lg bg-pine px-5 py-3 text-center font-semibold text-white hover:bg-pine-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
           >
             Continue to payment
           </Link>
           <Link
-            href="/car/plans"
+            href={`/${lob.slug}/plans`}
             className="rounded-lg border border-pine px-5 py-3 text-center font-semibold text-pine hover:bg-pine-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
           >
             Change plan

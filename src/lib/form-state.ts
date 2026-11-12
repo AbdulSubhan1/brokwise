@@ -1,9 +1,10 @@
-import type { FormField } from "./schemas";
+/** A form's raw values by field name. */
+export type FormValues = Record<string, string>;
 
-/** What a car form's server action returns: the typed values (to refill the form) and the errors to show. */
+/** What a form's server action returns: the typed values (to refill the form) and the errors to show. */
 export type FormState = {
-  values: Partial<Record<FormField, string>>;
-  errors: Partial<Record<FormField, string>>;
+  values: FormValues;
+  errors: Record<string, string>;
   formError?: string;
 };
 
@@ -15,7 +16,7 @@ export const SEND_FAILED = "We couldn't send your request. Please try again.";
 export function errorsByField(issues: readonly { path: PropertyKey[]; message: string }[]): FormState["errors"] {
   const errors: FormState["errors"] = {};
   for (const issue of issues) {
-    const field = String(issue.path[0] ?? "") as FormField;
+    const field = String(issue.path[0] ?? "");
     if (field && !errors[field]) errors[field] = issue.message;
   }
   return errors;

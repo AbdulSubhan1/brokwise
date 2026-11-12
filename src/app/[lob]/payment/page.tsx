@@ -9,14 +9,15 @@ import { PaymentForm } from "@/components/payment-form";
 import { SiteHeader } from "@/components/site-header";
 import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
+import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 import { getOpportunity, getPaymentSummary } from "@/lib/policydesk";
 
 export const metadata: Metadata = { title: "Payment", robots: { index: false } };
 
-export default function PaymentPage() {
+export default function PaymentPage({ params }: PageProps<"/[lob]/payment">) {
   return (
     <Suspense fallback={<Loading />}>
-      <Payment />
+      <Payment params={params} />
     </Suspense>
   );
 }
@@ -32,28 +33,30 @@ function Loading() {
   );
 }
 
-async function Payment() {
+async function Payment({ params }: { params: Promise<{ lob: string }> }) {
+  const lob = await lobFrom(params);
   const publicId = await readJourney();
-  if (!publicId) redirect("/car");
+  if (!publicId) redirect(`/${lob.slug}`);
 
   const [view, result] = await Promise.all([getOpportunity(publicId), getPaymentSummary(publicId)]);
-  if (!view) redirect("/car");
+  if (!view) redirect(`/${lob.slug}`);
+  stayInOwnLine(view.opportunity.product, lob, "payment");
   if (!result.ok) {
     // A short-form journey has no lead; a full-form one without a saved plan picks one first.
-    if (result.code === "no_lead") redirect("/car/received");
-    if (result.code === "no_selection") redirect("/car/plans");
-    if (result.status === 404) redirect("/car");
+    if (result.code === "no_lead") redirect(`/${lob.slug}/received`);
+    if (result.code === "no_selection") redirect(`/${lob.slug}/plans`);
+    if (result.status === 404) redirect(`/${lob.slug}`);
     throw new Error(`PolicyDesk answered ${result.status} (${result.code}) for the payment summary`);
   }
   const summary = result.data;
-  if (summary.status === "already_paid") redirect("/car/thank-you");
+  if (summary.status === "already_paid") redirect(`/${lob.slug}/thank-you`);
 
   return (
     <>
       <SiteHeader aside={<ContactCard person={contactOf(view)} />} />
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
         <div>
-          <p className="text-sm font-semibold tracking-wide text-pine uppercase">Car insurance</p>
+          <p className="text-sm font-semibold tracking-wide text-pine uppercase">{lob.title}</p>
           <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">Payment</h1>
           <p className="mt-2 text-lg">
             Quote reference:{" "}
@@ -74,9 +77,9 @@ async function Payment() {
           </div>
         </section>
 
-        <PaymentForm total={summary.total} />
+        <PaymentForm lob={lob.slug} total={summary.total} />
 
-        <Link href="/car/plans" className="w-fit font-semibold text-pine underline underline-offset-2">
+        <Link href={`/${lob.slug}/plans`} className="w-fit font-semibold text-pine underline underline-offset-2">
           Change plan
         </Link>
       </main>

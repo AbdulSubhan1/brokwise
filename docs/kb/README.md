@@ -236,6 +236,6 @@ is no widget, no check and no Cloudflare script, exactly as before.
 **Tests.** Unit: the visitor IP (`src/lib/client-ip.test.ts`), Turnstile verify with a mocked Cloudflare
 (`src/lib/turnstile.test.ts`), the widget's container and token field (`src/components/turnstile.test.ts`),
 429 mapping in the PolicyDesk client (`src/lib/policydesk.test.ts`) and the form, plan and Pay messages
-(`src/app/car/actions.test.ts`). E2E (`e2e/hardening.spec.ts`): the headers on `/` and `/car/quick`, and the
+(`src/app/[lob]/actions.test.ts`). E2E (`e2e/hardening.spec.ts`): the headers on `/` and `/car/quick`, and the
 call-me-back form working with no Turnstile keys and no request to Cloudflare. PolicyDesk runs with
 `RATE_LIMITS=off` in Brokwise's E2E, since every browser test comes from one IP.

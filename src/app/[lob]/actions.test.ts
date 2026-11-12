@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// The car server actions with PolicyDesk, the journey cookie and Next's request APIs mocked. Turnstile is the real
+// The journey server actions with PolicyDesk, the journey cookie and Next's request APIs mocked. Turnstile is the real
 // module with Cloudflare's siteverify mocked through fetch.
 
 vi.mock("server-only", () => ({}));
@@ -21,7 +21,7 @@ vi.mock("@/lib/policydesk", () => ({
   startPayment: vi.fn(),
 }));
 
-const { selectPlan, sendQuickForm, startPaymentAction } = await import("./actions");
+const { selectPlan, sendFullForm, sendQuickForm, startPaymentAction } = await import("./actions");
 const policydesk = await import("@/lib/policydesk");
 const { BOT_CHECK_FAILED, EMPTY_FORM, TOO_MANY_REQUESTS, TURNSTILE_FIELD } = await import("@/lib/form-state");
 
@@ -40,8 +40,10 @@ const QUICK = {
   year: "2021",
 };
 
-function form(values: Record<string, string | string[]>): FormData {
+/** The form's fields plus the hidden `lob` field every journey form carries. */
+function form(values: Record<string, string | string[]>, lob = "car"): FormData {
   const data = new FormData();
+  data.append("lob", lob);
   for (const [k, v] of Object.entries(values)) for (const one of [v].flat()) data.append(k, one);
   return data;
 }
@@ -138,5 +140,96 @@ describe("Turnstile", () => {
     const state = await sendQuickForm(EMPTY_FORM, form({ ...QUICK, email: "nope", [TURNSTILE_FIELD]: "t" }));
     expect(state.errors.email).toBeDefined();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("lines of business", () => {
+  const view = (product: string) => ({
+    ok: true as const,
+    view: {
+      opportunity: { publicId: "0b0e3a5e-8f8d-4c3c-9a43-2b8f7c1d2e3f", status: "new" as const, product },
+      lead: null,
+      contact: null,
+      selection: null,
+    },
+  });
+  const CONTACT = { customerName: "Ayesha Rahman", email: "ayesha@example.test", countryCode: "+92", mobile: "3001234567" };
+
+  it("a travel call-back goes to PolicyDesk as a travel opportunity and on to /travel/received", async () => {
+    createOpportunity.mockResolvedValue(view("travel"));
+    await expect(sendQuickForm(EMPTY_FORM, form({ ...CONTACT, destination: "asia" }, "travel"))).rejects.toThrow(
+      "redirect:/travel/received",
+    );
+    expect(createOpportunity).toHaveBeenCalledWith({
+      form: "short",
+      product: "travel",
+      customerName: "Ayesha Rahman",
+      email: "ayesha@example.test",
+      phone: "+923001234567",
+      details: { destination: "asia" },
+    });
+  });
+
+  it("builds a date from its Day, Month and Year selects when the hidden value is empty (no JavaScript)", async () => {
+    createOpportunity.mockResolvedValue(view("health"));
+    const year = new Date().getFullYear() - 30;
+    await expect(
+      sendFullForm(
+        EMPTY_FORM,
+        form(
+          {
+            ...CONTACT,
+            coverFor: "me",
+            "dateOfBirth-day": "5",
+            "dateOfBirth-month": "3",
+            "dateOfBirth-year": String(year),
+            city: "Karachi",
+            preExisting: "no",
+          },
+          "health",
+        ),
+      ),
+    ).rejects.toThrow("redirect:/health/plans");
+    expect(createOpportunity.mock.calls[0][0].details).toMatchObject({ dateOfBirth: `${year}-03-05` });
+  });
+
+  it("a PolicyDesk field error lands on the travel field with its message", async () => {
+    createOpportunity.mockResolvedValue({
+      ok: false,
+      status: 400,
+      error: { code: "invalid_request", field: "details.endDate", message: "validation.tripTooLong" },
+    });
+    const nextYear = new Date().getFullYear() + 1;
+    const state = await sendFullForm(
+      EMPTY_FORM,
+      form(
+        {
+          ...CONTACT,
+          destination: "gcc",
+          tripType: "single",
+          startDate: `${nextYear}-02-01`,
+          endDate: `${nextYear}-02-10`,
+          travellers: "2",
+          oldestAge: "40",
+        },
+        "travel",
+      ),
+    );
+    expect(state.errors).toEqual({ endDate: "A single trip can be up to 180 days." });
+  });
+
+  it("a form without a line we sell is refused before PolicyDesk is called", async () => {
+    const state = await sendQuickForm(EMPTY_FORM, form(QUICK, "boat"));
+    expect(state.formError).toBe("We couldn't send your request. Please try again.");
+    expect(createOpportunity).not.toHaveBeenCalled();
+  });
+
+  it("plan and payment redirects stay in the visitor's line", async () => {
+    saveSelection.mockResolvedValue({ ok: false, status: 409, error: { code: "no_lead" } });
+    await expect(selectPlan(form({ planId: "3", addOnIds: [] }, "home"))).rejects.toThrow("redirect:/home/received");
+    startPayment.mockResolvedValue({ ok: false, status: 409, code: "already_paid" });
+    await expect(startPaymentAction({}, form({ terms: "yes" }, "health"))).rejects.toThrow(
+      "redirect:/health/thank-you",
+    );
   });
 });
