@@ -13,7 +13,7 @@ export function Select({
 }: { options: readonly Option[]; placeholder?: string } & SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div className={`relative ${className}`}>
-      <select className={`${control} cursor-pointer appearance-none pr-10`} {...select}>
+      <select className={`${control} cursor-pointer appearance-none truncate pr-8`} {...select}>
         {placeholder !== undefined && <option value="">{placeholder}</option>}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -23,7 +23,7 @@ export function Select({
       </select>
       <ChevronDown
         aria-hidden
-        className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-muted"
+        className="pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2 text-muted"
       />
     </div>
   );

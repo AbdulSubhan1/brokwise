@@ -1,28 +1,18 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PayLinkProblem } from "@/components/pay-link-problem";
-import { SiteHeader } from "@/components/site-header";
+import { PageLoading } from "@/components/page-loading";
 
 export const metadata: Metadata = { title: "Link not valid", robots: { index: false } };
 
 export default function PayLinkInvalidPage({ searchParams }: PageProps<"/pay/invalid">) {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<PageLoading label="Loading…" />}>
       <Invalid searchParams={searchParams} />
     </Suspense>
   );
 }
 
-function Loading() {
-  return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
-        <p className="text-muted">Loading…</p>
-      </main>
-    </>
-  );
-}
 
 async function Invalid({ searchParams }: Pick<PageProps<"/pay/invalid">, "searchParams">) {
   // ?retry=1: PolicyDesk couldn't be reached, so the link itself may be fine.

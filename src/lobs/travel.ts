@@ -1,6 +1,7 @@
-import { CalendarRange, Globe, Plane, Repeat, UserRound } from "lucide-react";
+import { Globe, Plane, Repeat, UserRound, Users } from "lucide-react";
 import { LIMITS, travelFullSchema, travelQuickSchema } from "@/lib/schemas";
 import { detailsBuilder, THIS_YEAR } from "./build";
+import { metaOf } from "./meta";
 import type { FieldSpec, LobConfig } from "./types";
 
 export const TRAVEL_REGION_OPTIONS = [
@@ -32,12 +33,8 @@ const counts = (from: number, to: number) =>
   Array.from({ length: to - from + 1 }, (_, i) => ({ value: String(from + i), label: String(from + i) }));
 
 export const travel: LobConfig = {
-  slug: "travel",
+  ...metaOf("travel"),
   product: "travel",
-  name: "Travel",
-  title: "Travel insurance",
-  tagline: "Medical care, delays and cancellations, for one trip or a whole year.",
-  icon: Plane,
   landing: {
     heading: "Cover for the trip ahead",
     intro: "One trip or a year of them: compare plans for where you are going, or ask a coordinator to call.",
@@ -74,7 +71,7 @@ export const travel: LobConfig = {
     },
     {
       title: "Who is travelling",
-      icon: CalendarRange,
+      icon: Users,
       fields: [
         {
           kind: "select",

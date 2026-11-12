@@ -5,17 +5,19 @@ import { pickDate } from "./helpers";
 async function expectCoordinatorInHeader(page: Page) {
   const badge = page.getByRole("button", { name: "Your coordinator" });
   await expect(badge).toBeVisible();
+  // The footer has the help desk's email and number too, so look only in the header
+  const header = page.getByRole("banner");
 
   // The card opens on hover…
   await badge.hover();
-  await expect(page.getByRole("link", { name: /@/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /^\+92/ })).toHaveAttribute("href", /^tel:\+92\d+$/);
+  await expect(header.getByRole("link", { name: /@/ })).toBeVisible();
+  await expect(header.getByRole("link", { name: /^\+92/ })).toHaveAttribute("href", /^tel:\+92\d+$/);
 
   // …and on keyboard focus.
   await page.mouse.move(0, 0);
-  await expect(page.getByRole("link", { name: /@/ })).toBeHidden();
+  await expect(header.getByRole("link", { name: /@/ })).toBeHidden();
   await badge.focus();
-  await expect(page.getByRole("link", { name: /@/ })).toBeVisible();
+  await expect(header.getByRole("link", { name: /@/ })).toBeVisible();
 }
 
 async function pickCar(page: Page, make: string, model: string, year: string) {

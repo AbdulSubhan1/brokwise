@@ -36,7 +36,7 @@ export function RadioCards({
           return (
             <label
               key={o.value}
-              className="group relative flex cursor-pointer items-center gap-3 rounded-xl border border-line bg-card px-3 py-3 hover:border-pine/60 has-checked:border-pine has-checked:bg-pine-soft has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-pine"
+              className="group relative flex cursor-pointer flex-col items-start gap-2 rounded-xl border border-line bg-card py-3 pr-10 pl-3 hover:border-pine/60 has-checked:border-pine has-checked:bg-pine-soft has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-pine"
             >
               <input
                 type="radio"
@@ -56,7 +56,7 @@ export function RadioCards({
                   <Icon className="size-5" />
                 </span>
               )}
-              <span className="flex min-w-0 flex-1 flex-col">
+              <span className="flex min-w-0 flex-col">
                 <span className="font-semibold">{o.label}</span>
                 {o.description && (
                   <span id={descriptionId} className="text-sm text-muted">
@@ -66,7 +66,7 @@ export function RadioCards({
               </span>
               <span
                 aria-hidden
-                className="grid size-5 shrink-0 place-items-center rounded-full border-2 border-line bg-card peer-checked:border-pine"
+                className="absolute top-3 right-3 grid size-5 place-items-center rounded-full border-2 border-line bg-card peer-checked:border-pine"
               >
                 <span className="size-2.5 rounded-full bg-pine opacity-0 group-has-checked:opacity-100" />
               </span>

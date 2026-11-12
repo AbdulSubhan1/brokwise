@@ -1,11 +1,11 @@
 # Brokwise knowledge base
 
-Brokwise is a made-up insurance broker's public website. It sells many lines of business over time;
-only **car** is built today. It is a demo merchant for PaySandbox (a fake payment gateway) and uses
+Brokwise is a made-up insurance broker's public website. It sells four lines of business: **car,
+travel, home and health**, all through one config-driven journey (step 6). It is a demo merchant for PaySandbox (a fake payment gateway) and uses
 PolicyDesk (an insurance CRM) as its back office. All people, insurers and numbers are made up.
 
 Pages in this folder:
-- this overview: what Brokwise is, the three systems, the journeys and what steps 1 to 5 ship;
+- this overview: what Brokwise is, the three systems, the journeys and what steps 1 to 6 ship;
 - [engineering-highlights.md](engineering-highlights.md): the decisions beyond "it works" (security,
   payments, business rules, delivery) and where each is tested;
 - [future-scope.md](future-scope.md): what is planned later and what triggers it.
@@ -239,3 +239,56 @@ is no widget, no check and no Cloudflare script, exactly as before.
 (`src/app/[lob]/actions.test.ts`). E2E (`e2e/hardening.spec.ts`): the headers on `/` and `/car/quick`, and the
 call-me-back form working with no Turnstile keys and no request to Cloudflare. PolicyDesk runs with
 `RATE_LIMITS=off` in Brokwise's E2E, since every browser test comes from one IP.
+
+## What step 6 ships
+
+More lines of business and a finished look. The car journey works as before, at the same URLs.
+
+**Four lines, one engine.** Every journey page lives under `/<line>/…` (`src/app/[lob]/`): `/travel`,
+`/travel/details`, `/home/quick`, `/health/plans` and so on, next to `/car/…`. Each line is one config file
+in `src/lobs/` (`car.ts`, `travel.ts`, `home.ts`, `health.ts`) with its words, its icon, the fields of its
+quick and full forms, its plan covers and `buildDetails`, which turns a form into PolicyDesk's request.
+The pages, the form renderer (`src/components/lob-form.tsx`) and the server actions are shared. Adding a
+line is a config file here plus a product schema in PolicyDesk. An unknown line (`/boat/details`) shows
+the "We can't find that page" page with links to the four lines.
+
+| Line | Call me back asks | Get prices now asks |
+| --- | --- | --- |
+| Car | name, email, mobile, make, model, year | as before (car, driver, contact) |
+| Travel | name, email, mobile, destination region | destination, trip type (single trip or annual plan), start date, end date (single trips only), travellers (1–9), oldest traveller's age (0–85), name, email, mobile |
+| Home | name, email, mobile, city | property type (apartment, villa, townhouse), owner or tenant, city, building value (owners only, $10,000–$5,000,000), contents value ($1,000–$500,000), name, email, mobile |
+| Health | name, email, mobile, who is covered | who is covered (just me, me and my spouse, my family), number of children (family only, 0–6), any pre-existing condition, name, date of birth (age 18–75), city, email, mobile |
+
+The rules mirror PolicyDesk's (`src/lib/schemas.ts`), so a mistake shows under its field before anything
+is sent. Travel dates (`src/lib/travel-dates.ts`): the trip starts today or later; a single trip ends on or
+after its start and lasts at most 180 days; an annual plan has no end date. A field the form hides (end
+date on an annual plan, building value for a tenant, children unless family) is not sent. When
+PolicyDesk still refuses a field, its rule (`validation.tripTooLong` and the like) is shown as a sentence
+under that field.
+
+**Where things go.** PolicyDesk routes travel and home to its home and travel department, health to the
+health department and car to motor and marine, for coordinators and for advisors after payment. Lead
+references start with `CAR-`, `TRV-`, `HOM-` or `HLT-`. Each line's plans page shows only that line's
+plans and add-ons (health plans include a wellness check-up). PaySandbox sends the visitor back to
+`/<line>/thank-you` or `/<line>/payment`. A pay link (`/pay/<token>`) asks PolicyDesk for the journey's
+product and opens `/<line>/payment` or `/<line>/thank-you`. A journey belongs to one line: a travel
+journey that opens `/car/plans` is sent to `/travel/plans`.
+
+**The finished UI.** Icons everywhere (`lucide-react`, decorative ones hidden from screen readers), a
+sticky header with an "Insurance" menu (a sheet on mobile), the help desk number and the contact card, a
+footer with the four lines, the help desk and "Payments by PaySandbox · test mode". Every journey page has
+a progress bar (Fill details → Choose plan → Pay → Done). Forms use the new controls (`src/components/ui/`):
+styled selects, dates as Day / Month / Year selects, big tappable choices for yes/no and options, and
+section headings with icons. Plan cards show the insurer's coloured initials, the cover as a badge,
+benefits and included add-ons with ticks, the other add-ons in a collapsible "Add-ons (n)" list with how
+many are ticked, the tags **Cheapest** (lowest plan price) and **Best value** (cheapest plan of the line's
+widest cover: comprehensive, annual multi-trip, building and contents, premium), and on mobile a total
+bar that sticks to the bottom of the screen. The payment page has a lock and "Secured by PaySandbox (test
+mode)"; the thank-you page a big tick, the order card and "What happens next" as a three-step timeline.
+
+**Tests.** Unit: the date selects (`date-field.test.ts`), the progress bar (`stepper.test.ts`), the travel
+date rules (`travel-dates.test.ts`), `buildDetails` per line (`src/lobs/lobs.test.ts`), the plan tags
+(`plan-tags.test.ts`) and the shared actions (`actions.test.ts`). E2E (`e2e/lobs.spec.ts`): a travel journey
+paid on the fake checkout with a home and travel advisor, a home call-back with a home and travel
+coordinator, health plans with the included wellness check-up, an unknown line, and `/car/details`. The
+older specs fill the new date and choice controls.

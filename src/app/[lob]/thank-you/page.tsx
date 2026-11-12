@@ -1,15 +1,23 @@
+import { FileCheck2, FileText, PhoneCall } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ContactCard } from "@/components/contact-card";
 import { OrderLines } from "@/components/order-lines";
+import { PageLoading } from "@/components/page-loading";
 import { PaymentPending } from "@/components/payment-pending";
 import { SiteHeader } from "@/components/site-header";
+import { SuccessMark } from "@/components/success-mark";
+import { Timeline } from "@/components/timeline";
+import { Card } from "@/components/ui/card";
+import { Stepper } from "@/components/ui/stepper";
+import { textLink } from "@/components/ui/styles";
 import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
-import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 import { getOpportunity, getOrder, type OrderView } from "@/lib/policydesk";
+import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
+import type { LobConfig } from "@/lobs";
 
 export const metadata: Metadata = { title: "Thank you", robots: { index: false } };
 
@@ -18,20 +26,9 @@ const PAID_ON = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: 
 
 export default function ThankYouPage({ params }: PageProps<"/[lob]/thank-you">) {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<PageLoading label="Loading your order…" />}>
       <ThankYou params={params} />
     </Suspense>
-  );
-}
-
-function Loading() {
-  return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
-        <p className="text-muted">Loading your order…</p>
-      </main>
-    </>
   );
 }
 
@@ -48,7 +45,7 @@ async function ThankYou({ params }: { params: Promise<{ lob: string }> }) {
   }
   const { order, advisor } = result.data;
   if (!order) redirect(`/${lob.slug}/payment`);
-  if (order.status === "paid") return <Paid order={order} advisor={advisor} />;
+  if (order.status === "paid") return <Paid lob={lob} order={order} advisor={advisor} />;
 
   // Not confirmed yet: the coordinator still looks after the journey, so the header shows them.
   const view = await getOpportunity(publicId);
@@ -57,9 +54,13 @@ async function ThankYou({ params }: { params: Promise<{ lob: string }> }) {
   return (
     <>
       <SiteHeader aside={<ContactCard person={contactOf(view)} />} />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 md:py-16">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
+        <Stepper current="pay" />
         <div className="flex flex-col gap-3">
-          <span aria-hidden className="size-10 animate-spin rounded-full border-4 border-pine-soft border-t-pine" />
+          <span
+            aria-hidden
+            className="size-12 animate-spin rounded-full border-4 border-pine-soft border-t-pine motion-reduce:animate-none"
+          />
           <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Confirming your payment…</h1>
           <p className="text-lg">
             Quote reference: <strong className="font-mono tracking-wide">{order.quoteReference}</strong>
@@ -71,15 +72,23 @@ async function ThankYou({ params }: { params: Promise<{ lob: string }> }) {
   );
 }
 
-function Paid({ order, advisor }: { order: NonNullable<OrderView["order"]>; advisor: OrderView["advisor"] }) {
+function Paid({
+  lob,
+  order,
+  advisor,
+}: {
+  lob: LobConfig;
+  order: NonNullable<OrderView["order"]>;
+  advisor: OrderView["advisor"];
+}) {
   return (
     <>
       <SiteHeader aside={<ContactCard person={contactOf({ contact: advisor })} />} />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 md:py-16">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
+        <Stepper current="done" />
         <div className="flex flex-col gap-3">
-          <span aria-hidden className="grid size-12 place-items-center rounded-full bg-pine text-2xl text-white">
-            ✓
-          </span>
+          <SuccessMark />
+          <p className="font-semibold text-pine">{lob.title}</p>
           <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Payment received</h1>
           <p className="text-lg">
             Quote reference:{" "}
@@ -89,14 +98,14 @@ function Paid({ order, advisor }: { order: NonNullable<OrderView["order"]>; advi
           </p>
         </div>
 
-        <section aria-labelledby="paid" className="rounded-xl border border-line bg-card p-5 md:p-6">
+        <Card aria-labelledby="paid">
           <h2 id="paid" className="text-lg font-bold">
             Your order
           </h2>
           <div className="mt-2">
             <OrderLines lines={order.lines} total={order.total} totalLabel="Total paid" />
           </div>
-          <ul className="mt-4 flex flex-col gap-1 text-sm text-muted">
+          <ul className="mt-4 flex flex-col gap-1 border-t border-line pt-4 text-sm text-muted">
             {order.paidAt && <li>Paid on {PAID_ON.format(new Date(order.paidAt))}</li>}
             {order.paymentId && (
               <li>
@@ -108,23 +117,40 @@ function Paid({ order, advisor }: { order: NonNullable<OrderView["order"]>; advi
             )}
             <li>A receipt goes to {order.emailMasked}</li>
           </ul>
-        </section>
+        </Card>
 
-        <section aria-labelledby="next" className="rounded-xl border border-line bg-card p-5 md:p-6">
+        <Card aria-labelledby="next">
           <h2 id="next" className="text-lg font-bold">
             What happens next
           </h2>
-          <p className="mt-2">
-            {advisor
-              ? `Your advisor ${advisor.name} will contact you about documents.`
-              : "The Brokwise help desk will find you an advisor, who will contact you about documents."}
-          </p>
-          <p className="mt-2 text-sm text-muted">
-            They will call you on {order.phoneMasked}. Your policy is issued once your documents are checked.
-          </p>
-        </section>
+          <Timeline
+            steps={[
+              {
+                icon: PhoneCall,
+                title: advisor ? "Your advisor calls you" : "We find you an advisor",
+                body: (
+                  <p>
+                    {advisor
+                      ? `Your advisor ${advisor.name} will contact you about documents.`
+                      : "The Brokwise help desk will find you an advisor, who will contact you about documents."}
+                  </p>
+                ),
+              },
+              {
+                icon: FileText,
+                title: "You send your documents",
+                body: <p>They will call you on {order.phoneMasked} and tell you what to send.</p>,
+              },
+              {
+                icon: FileCheck2,
+                title: "Your policy is issued",
+                body: <p>Your policy is issued once your documents are checked.</p>,
+              },
+            ]}
+          />
+        </Card>
 
-        <Link href="/" className="w-fit font-semibold text-pine underline underline-offset-2">
+        <Link href="/" className={`w-fit ${textLink}`}>
           Back to home
         </Link>
       </main>

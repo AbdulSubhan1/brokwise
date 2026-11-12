@@ -21,7 +21,7 @@ export function MobileField({ state }: { state: FormState }) {
           aria-label="Country code"
           defaultValue={values.countryCode ?? "+92"}
           options={DIALS}
-          className="w-36 shrink-0"
+          className="w-[9.5rem] shrink-0"
         />
         <input
           id="mobile"

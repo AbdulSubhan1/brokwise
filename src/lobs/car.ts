@@ -1,15 +1,12 @@
 import { Car, Mail, UserRound } from "lucide-react";
 import { carFullSchema, carQuickSchema, LIMITS } from "@/lib/schemas";
 import { detailsBuilder, THIS_YEAR, YES_NO } from "./build";
+import { metaOf } from "./meta";
 import type { LobConfig } from "./types";
 
 export const car: LobConfig = {
-  slug: "car",
+  ...metaOf("car"),
   product: "car",
-  name: "Car",
-  title: "Car insurance",
-  tagline: "Comprehensive or third party, for the car you drive every day.",
-  icon: Car,
   landing: {
     heading: "Cover for the car you drive",
     intro: "Compare plans from our partner insurers, or let a coordinator find one with you.",

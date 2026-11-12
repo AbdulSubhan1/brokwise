@@ -1,32 +1,28 @@
+import { FileText, ListChecks, PhoneCall, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ContactCard } from "@/components/contact-card";
-import { contactOf } from "@/lib/contact";
+import { PageLoading } from "@/components/page-loading";
 import { SiteHeader } from "@/components/site-header";
+import { SuccessMark } from "@/components/success-mark";
+import { Timeline } from "@/components/timeline";
+import { Card } from "@/components/ui/card";
+import { Stepper } from "@/components/ui/stepper";
+import { primaryButton, textLink } from "@/components/ui/styles";
+import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
-import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 import { getOpportunity } from "@/lib/policydesk";
+import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
 export const metadata: Metadata = { title: "Request received", robots: { index: false } };
 
 export default function ReceivedPage({ params }: PageProps<"/[lob]/received">) {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<PageLoading label="Loading your request…" />}>
       <Received params={params} />
     </Suspense>
-  );
-}
-
-function Loading() {
-  return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
-        <p className="text-muted">Loading your request…</p>
-      </main>
-    </>
   );
 }
 
@@ -43,11 +39,11 @@ async function Received({ params }: { params: Promise<{ lob: string }> }) {
   return (
     <>
       <SiteHeader aside={<ContactCard person={contactOf(view)} />} />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 md:py-16">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
+        <Stepper current="plan" />
         <div className="flex flex-col gap-3">
-          <span aria-hidden className="grid size-12 place-items-center rounded-full bg-pine text-2xl text-white">
-            ✓
-          </span>
+          <SuccessMark />
+          <p className="font-semibold text-pine">{lob.title}</p>
           <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Request received</h1>
           {view.lead && (
             <p className="text-lg">
@@ -56,33 +52,39 @@ async function Received({ params }: { params: Promise<{ lob: string }> }) {
           )}
         </div>
 
-        <section aria-labelledby="next" className="rounded-xl border border-line bg-card p-5 md:p-6">
+        <Card aria-labelledby="next">
           <h2 id="next" className="text-lg font-bold">
             What happens next
           </h2>
           {view.lead ? (
-            <p className="mt-2 text-muted">
-              Your plans are ready.{" "}
-              <Link href={`/${lob.slug}/plans`} className="font-semibold text-pine underline underline-offset-2">
+            <div className="mt-2">
+              <p className="text-muted">Your plans are ready.</p>
+              <Link href={`/${lob.slug}/plans`} className={`${primaryButton} mt-4`}>
+                <ListChecks aria-hidden className="size-5" />
                 See your plans
               </Link>
-            </p>
+            </div>
           ) : (
-            <>
-              <p className="mt-2 text-muted">Your coordinator will call you.</p>
-              <p className="mt-2 text-muted">
-                When your coordinator has your details, they&apos;ll send you a payment link.
-              </p>
-            </>
+            <Timeline
+              steps={[
+                { icon: PhoneCall, title: "We call you", body: <p>Your coordinator will call you.</p> },
+                {
+                  icon: FileText,
+                  title: "You choose a plan together",
+                  body: <p>When your coordinator has your details, they&apos;ll send you a payment link.</p>,
+                },
+                { icon: ShieldCheck, title: "You pay and you're covered", body: <p>Pay online through the link.</p> },
+              ]}
+            />
           )}
-          <p className="mt-4 text-sm text-muted">
+          <p className="mt-5 border-t border-line pt-4 text-sm text-muted">
             {view.contact
               ? `${view.contact.name} is looking after your request. Their details are at the top of the page.`
               : "All our coordinators are busy right now. The Brokwise help desk will make sure someone calls you."}
           </p>
-        </section>
+        </Card>
 
-        <Link href="/" className="w-fit font-semibold text-pine underline underline-offset-2">
+        <Link href="/" className={`w-fit ${textLink}`}>
           Back to home
         </Link>
       </main>

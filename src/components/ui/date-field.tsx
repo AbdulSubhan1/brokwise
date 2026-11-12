@@ -77,9 +77,9 @@ export function DateField({
         </p>
       )}
       <div className="mt-1 flex gap-2">
-        {part("day", "Day", DAYS, "w-[30%]")}
+        {part("day", "Day", DAYS, "w-[27%]")}
         {part("month", "Month", MONTH_OPTIONS, "flex-1")}
-        {part("year", "Year", years, "w-[32%]")}
+        {part("year", "Year", years, "w-[30%]")}
       </div>
       <input type="hidden" name={name} value={value} />
       <FieldError id={`${name}-error`} message={message} />

@@ -1,17 +1,14 @@
 import { Building, Building2, House, KeyRound, UserRound, Warehouse } from "lucide-react";
 import { homeFullSchema, homeQuickSchema } from "@/lib/schemas";
 import { detailsBuilder } from "./build";
+import { metaOf } from "./meta";
 import type { FieldSpec, LobConfig } from "./types";
 
 const city: FieldSpec = { kind: "text", name: "city", label: "City", autoComplete: "address-level2" };
 
 export const home: LobConfig = {
-  slug: "home",
+  ...metaOf("home"),
   product: "home",
-  name: "Home",
-  title: "Home insurance",
-  tagline: "Your building and what is inside it, whether you own or rent.",
-  icon: House,
   landing: {
     heading: "Cover for the place you live",
     intro: "Owners insure the building and its contents; tenants insure what they own inside.",

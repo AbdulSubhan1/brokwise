@@ -1,33 +1,30 @@
+import { ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ContactCard } from "@/components/contact-card";
+import { InsurerMark } from "@/components/insurer-mark";
+import { PageLoading } from "@/components/page-loading";
 import { SiteHeader } from "@/components/site-header";
+import { SuccessMark } from "@/components/success-mark";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Stepper } from "@/components/ui/stepper";
+import { primaryButton, secondaryButton } from "@/components/ui/styles";
 import { contactOf } from "@/lib/contact";
 import { readJourney } from "@/lib/journey";
 import { formatUsd } from "@/lib/money";
-import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 import { getOpportunity } from "@/lib/policydesk";
+import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
 export const metadata: Metadata = { title: "Your choice", robots: { index: false } };
 
 export default function SelectedPage({ params }: PageProps<"/[lob]/selected">) {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<PageLoading label="Loading your choice…" />}>
       <Selected params={params} />
     </Suspense>
-  );
-}
-
-function Loading() {
-  return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
-        <p className="text-muted">Loading your choice…</p>
-      </main>
-    </>
   );
 }
 
@@ -45,11 +42,10 @@ async function Selected({ params }: { params: Promise<{ lob: string }> }) {
   return (
     <>
       <SiteHeader aside={<ContactCard person={contactOf(view)} />} />
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-10 md:py-16">
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
+        <Stepper current="plan" />
         <div className="flex flex-col gap-3">
-          <span aria-hidden className="grid size-12 place-items-center rounded-full bg-pine text-2xl text-white">
-            ✓
-          </span>
+          <SuccessMark />
           <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Your choice is saved</h1>
           <p className="text-lg">
             Quote reference:{" "}
@@ -59,12 +55,19 @@ async function Selected({ params }: { params: Promise<{ lob: string }> }) {
           </p>
         </div>
 
-        <section aria-labelledby="choice" className="rounded-xl border border-line bg-card p-5 md:p-6">
-          <p className="text-sm font-semibold text-muted">{selection.insurer}</p>
-          <h2 id="choice" className="text-xl font-bold">
-            {selection.planName}
-          </h2>
-          <p className="text-sm text-muted">{selection.coverLabel}</p>
+        <Card aria-labelledby="choice">
+          <div className="flex items-center gap-3">
+            <InsurerMark insurer={selection.insurer} />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-muted">{selection.insurer}</p>
+              <h2 id="choice" className="text-xl font-bold">
+                {selection.planName}
+              </h2>
+            </div>
+          </div>
+          <div className="mt-3">
+            <Badge tone="pine">{selection.coverLabel}</Badge>
+          </div>
 
           <dl className="mt-4 flex flex-col divide-y divide-line">
             {selection.lines.map((line, i) => (
@@ -82,19 +85,14 @@ async function Selected({ params }: { params: Promise<{ lob: string }> }) {
               </dd>
             </div>
           </dl>
-        </section>
+        </Card>
 
         <div className="flex flex-col gap-3 md:flex-row">
-          <Link
-            href={`/${lob.slug}/payment`}
-            className="rounded-lg bg-pine px-5 py-3 text-center font-semibold text-white hover:bg-pine-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
-          >
+          <Link href={`/${lob.slug}/payment`} className={primaryButton}>
             Continue to payment
+            <ArrowRight aria-hidden className="size-5" />
           </Link>
-          <Link
-            href={`/${lob.slug}/plans`}
-            className="rounded-lg border border-pine px-5 py-3 text-center font-semibold text-pine hover:bg-pine-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine"
-          >
+          <Link href={`/${lob.slug}/plans`} className={secondaryButton}>
             Change plan
           </Link>
         </div>

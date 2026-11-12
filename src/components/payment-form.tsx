@@ -1,9 +1,11 @@
 "use client";
 
+import { LoaderCircle, Lock, ShieldCheck } from "lucide-react";
 import { type FormEvent, startTransition, useActionState } from "react";
 import { type PaymentFormState, startPaymentAction } from "@/app/[lob]/actions";
 import { formatUsd } from "@/lib/money";
 import { FieldError, FormError } from "./form-controls";
+import { primaryButton } from "./ui/styles";
 
 const EMPTY: PaymentFormState = {};
 
@@ -25,7 +27,7 @@ export function PaymentForm({ lob, total }: { lob: string; total: number }) {
     <form action={action} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       <input type="hidden" name="lob" value={lob} />
       <div>
-        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-line bg-card px-4 py-3 has-checked:border-pine has-checked:bg-pine-soft has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-pine">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-card px-4 py-3 has-checked:border-pine has-checked:bg-pine-soft has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-pine">
           <input
             type="checkbox"
             name="terms"
@@ -42,17 +44,26 @@ export function PaymentForm({ lob, total }: { lob: string; total: number }) {
 
       <FormError message={state.formError} />
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <button
           type="submit"
           disabled={pending}
           aria-describedby="pay-note"
-          className="w-full rounded-lg bg-pine px-5 py-3 text-base font-semibold text-white hover:bg-pine-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine disabled:opacity-60 md:w-auto md:self-start"
+          className={`${primaryButton} w-full text-base md:w-auto md:self-start`}
         >
+          {pending ? (
+            <LoaderCircle aria-hidden className="size-5 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Lock aria-hidden className="size-5" />
+          )}
           {pending ? "Opening PaySandbox…" : `Pay ${formatUsd(total)} with PaySandbox`}
         </button>
         <p id="pay-note" className="text-sm text-muted">
           You&apos;ll pay on PaySandbox&apos;s test checkout. Use test card 4242 4242 4242 4242.
+        </p>
+        <p className="flex items-center gap-1.5 text-sm font-medium text-pine-dark">
+          <ShieldCheck aria-hidden className="size-4" />
+          Secured by PaySandbox (test mode)
         </p>
       </div>
     </form>

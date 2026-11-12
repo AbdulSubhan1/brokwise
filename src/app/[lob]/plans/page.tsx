@@ -4,11 +4,15 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ContactCard } from "@/components/contact-card";
 import { DemoNotice } from "@/components/demo-notice";
+import { PageIntro } from "@/components/page-intro";
+import { PageLoading } from "@/components/page-loading";
 import { PlanCard } from "@/components/plan-card";
 import { SiteHeader } from "@/components/site-header";
+import { Stepper } from "@/components/ui/stepper";
 import { contactOf } from "@/lib/contact";
 import { TOO_MANY_REQUESTS } from "@/lib/form-state";
 import { readJourney } from "@/lib/journey";
+import { planTags } from "@/lib/plan-tags";
 import { getOpportunity, getPlans } from "@/lib/policydesk";
 import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
@@ -22,20 +26,9 @@ const ERRORS: Record<string, string> = {
 
 export default function PlansPage({ params, searchParams }: PageProps<"/[lob]/plans">) {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<PageLoading label="Loading your plans…" wide />}>
       <Plans params={params} searchParams={searchParams} />
     </Suspense>
-  );
-}
-
-function Loading() {
-  return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
-        <p className="text-muted">Loading your plans…</p>
-      </main>
-    </>
   );
 }
 
@@ -63,23 +56,26 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
   const covers = [{ value: "", label: "All" }, ...lob.covers];
   const cover = lob.covers.some((c) => c.value === one(query.cover)) ? one(query.cover) : "";
   const error = ERRORS[one(query.error)];
+  // Tags are worked out on every plan, so a filter doesn't move them.
+  const tags = planTags(result.plans, lob.bestValueCover);
   const plans = cover ? result.plans.filter((p) => p.cover === cover) : result.plans;
   const selection = view.selection;
 
   return (
     <>
       <SiteHeader aside={<ContactCard person={contactOf(view)} />} />
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
-        <div>
-          <p className="text-sm font-semibold tracking-wide text-pine uppercase">{lob.title}</p>
-          <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">Choose your plan</h1>
-          <p className="mt-2 text-muted">Prices are yearly, in US dollars.</p>
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 md:py-12">
+        <div className="max-w-3xl">
+          <Stepper current="plan" />
+        </div>
+        <PageIntro line={lob} title="Choose your plan">
+          <p>Prices are yearly, in US dollars.</p>
           {view.lead && (
-            <p className="mt-1 text-sm text-muted">
+            <p className="mt-1 text-sm">
               Your reference: <strong className="font-mono tracking-wide text-ink">{view.lead.reference}</strong>
             </p>
           )}
-        </div>
+        </PageIntro>
 
         <DemoNotice />
 
@@ -89,8 +85,8 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
           </p>
         )}
 
-        <nav aria-label="Filter by cover">
-          <ul className="flex flex-wrap gap-2">
+        <nav aria-label="Filter by cover" className="-mx-4 overflow-x-auto px-4">
+          <ul className="flex w-max gap-2">
             {covers.map((c) => {
               const active = c.value === cover;
               return (
@@ -99,7 +95,7 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
                     href={c.value ? `/${lob.slug}/plans?cover=${c.value}` : `/${lob.slug}/plans`}
                     aria-current={active ? "page" : undefined}
                     scroll={false}
-                    className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine ${
+                    className={`inline-flex rounded-full border px-4 py-2 text-sm font-semibold whitespace-nowrap focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine ${
                       active ? "border-pine bg-pine text-white" : "border-line bg-card text-ink hover:border-pine"
                     }`}
                   >
@@ -112,15 +108,23 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
         </nav>
 
         {plans.length === 0 ? (
-          <p className="rounded-xl border border-line bg-card p-5 text-muted">
+          <p className="rounded-2xl border border-line bg-card p-5 text-muted">
             No plans with this cover right now. Try another cover or ask your coordinator.
           </p>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid items-start gap-4 lg:grid-cols-2">
             {plans.map((plan) => {
               const chosenIds = selection?.planId === plan.id ? selection.addOnIds : undefined;
               // The key changes when the saved choice does, so the card's ticks start again from it.
-              return <PlanCard key={`${plan.id}:${chosenIds?.join(",") ?? ""}`} lob={lob.slug} plan={plan} chosenIds={chosenIds} />;
+              return (
+                <PlanCard
+                  key={`${plan.id}:${chosenIds?.join(",") ?? ""}`}
+                  lob={lob.slug}
+                  plan={plan}
+                  chosenIds={chosenIds}
+                  tags={tags.get(plan.id)}
+                />
+              );
             })}
           </div>
         )}
