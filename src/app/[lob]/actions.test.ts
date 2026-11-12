@@ -253,6 +253,14 @@ describe("lines of business", () => {
     expect(createOpportunity).not.toHaveBeenCalled();
   });
 
+  it("a saved plan goes straight to the review-and-pay page", async () => {
+    saveSelection.mockResolvedValue({ ok: true, selection: {} as never });
+    await expect(selectPlan(form({ planId: "3", addOnIds: ["7"] }, "travel"))).rejects.toThrow(
+      "redirect:/travel/payment",
+    );
+    expect(saveSelection).toHaveBeenCalledWith("0b0e3a5e-8f8d-4c3c-9a43-2b8f7c1d2e3f", { planId: 3, addOnIds: [7] });
+  });
+
   it("plan and payment redirects stay in the visitor's line", async () => {
     saveSelection.mockResolvedValue({ ok: false, status: 409, error: { code: "no_lead" } });
     await expect(selectPlan(form({ planId: "3", addOnIds: [] }, "home"))).rejects.toThrow("redirect:/home/received");

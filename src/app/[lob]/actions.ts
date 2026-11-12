@@ -119,7 +119,8 @@ export async function selectPlan(formData: FormData): Promise<void> {
   if (!parsed.success) redirect(`${base}/plans?error=unavailable`);
 
   const result = await saveSelection(publicId, parsed.data);
-  if (result.ok) redirect(`${base}/selected`);
+  // One review page before paying: the saved choice and the Pay button are on the payment page.
+  if (result.ok) redirect(`${base}/payment`);
   if (result.status === 409 && result.error.code === "no_lead") redirect(`${base}/received`);
   if (result.status === 404) redirect(base);
   if (result.error.code === RATE_LIMITED) redirect(`${base}/plans?error=rate_limited`);
