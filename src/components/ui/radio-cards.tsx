@@ -6,7 +6,7 @@ export type RadioCardOption = { value: string; label: string; description?: stri
 /**
  * Big tappable choices for a handful of options (yes/no, trip type, who is covered). Real radio buttons, invisible
  * and stretched over their card, so taps, arrow keys, focus and screen readers behave as usual; the card shows the
- * checked and focused states.
+ * checked and focused states. The first radio button has the field's name as id, for the form's error summary.
  */
 export function RadioCards({
   name,
@@ -30,7 +30,7 @@ export function RadioCards({
     <fieldset aria-describedby={error ? `${name}-error` : undefined} className="md:col-span-2">
       <legend className="font-medium">{label}</legend>
       <div className={`mt-1.5 grid gap-2 ${columns}`}>
-        {options.map((o) => {
+        {options.map((o, i) => {
           const Icon = o.icon;
           const descriptionId = o.description ? `${name}-${o.value}-description` : undefined;
           return (
@@ -40,6 +40,7 @@ export function RadioCards({
             >
               <input
                 type="radio"
+                id={i === 0 ? name : undefined}
                 name={name}
                 value={o.value}
                 {...(value !== undefined

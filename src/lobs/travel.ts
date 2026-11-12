@@ -77,6 +77,7 @@ export const travel: LobConfig = {
           kind: "select",
           name: "travellers",
           label: "Travellers",
+          required: "Choose how many people are travelling.",
           placeholder: "How many?",
           options: counts(LIMITS.travellers.min, LIMITS.travellers.max),
         },

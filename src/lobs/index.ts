@@ -1,11 +1,12 @@
-import { CONTACT_FIELDS } from "@/lib/schemas";
+import { CONTACT_FIELDS, REQUIRED } from "@/lib/schemas";
 import { car } from "./car";
-import { dateFields, sectionFields } from "./build";
+import { dateFields, type FieldLabel, labelsOf, sectionFields } from "./build";
 import { health } from "./health";
 import { home } from "./home";
 import { travel } from "./travel";
 import type { FormKind, LobConfig } from "./types";
 
+export { type FieldLabel, labelsOf } from "./build";
 export type { FieldSpec, FormKind, FormSectionSpec, LobConfig } from "./types";
 
 // The lines of business Brokwise sells, in menu order. Adding a line is one config file here plus PolicyDesk's
@@ -43,4 +44,20 @@ export function formFields(lob: LobConfig, form: FormKind): string[] {
 
 export function formDateFields(lob: LobConfig, form: FormKind): string[] {
   return dateFields(formSections(lob, form));
+}
+
+/** Every field a form sends, with its label and summary link, in the order the form shows them. */
+export function formLabels(lob: LobConfig, form: FormKind): FieldLabel[] {
+  return formSections(lob, form).flatMap((s) => s.fields.flatMap(labelsOf));
+}
+
+/** The errors with each generic "required" message replaced by the field's own ("Enter your date of birth."). */
+export function withFieldMessages(lob: LobConfig, form: FormKind, errors: Record<string, string>): Record<string, string> {
+  const labels = new Map(formLabels(lob, form).map((l) => [l.name, l]));
+  return Object.fromEntries(
+    Object.entries(errors).map(([field, message]) => [
+      field,
+      message === REQUIRED ? (labels.get(field)?.required ?? message) : message,
+    ]),
+  );
 }

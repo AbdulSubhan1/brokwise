@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CAR_MAKES, carYears, modelsOf } from "@/lib/cars";
 import type { FormState } from "@/lib/form-state";
+import { FIXED_LABELS } from "@/lobs/build";
 import { SelectField } from "./form-controls";
 
 const YEARS = carYears().map((y) => ({ value: String(y), label: String(y) }));
@@ -19,7 +20,7 @@ export function CarFields({ state }: { state: FormState }) {
     <>
       <SelectField
         name="make"
-        label="Car make"
+        label={FIXED_LABELS.make}
         placeholder="Choose a make"
         options={MAKES}
         value={make}
@@ -31,7 +32,7 @@ export function CarFields({ state }: { state: FormState }) {
       />
       <SelectField
         name="model"
-        label="Car model"
+        label={FIXED_LABELS.model}
         placeholder={make ? "Choose a model" : "Choose a make first"}
         options={models}
         value={model}
@@ -41,7 +42,7 @@ export function CarFields({ state }: { state: FormState }) {
       />
       <SelectField
         name="year"
-        label="Model year"
+        label={FIXED_LABELS.year}
         placeholder="Choose a year"
         options={YEARS}
         defaultValue={values.year ?? ""}

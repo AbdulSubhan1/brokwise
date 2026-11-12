@@ -9,19 +9,31 @@ export type FormKind = "short" | "full";
 /** Show a field only while another field (a choice above it) has one of these values. */
 export type ShowWhen = { field: string; is: readonly string[] };
 
-/** One control of a form, as the generic form renders it. */
+/**
+ * One control of a form, as the generic form renders it. `required` replaces the "required" message the label gives
+ * ("Enter your city."), for a label that doesn't read well in it.
+ */
 export type FieldSpec = { showWhen?: ShowWhen } & (
   | {
       kind: "text";
       name: string;
       label: string;
+      required?: string;
       hint?: string;
       placeholder?: string;
       inputMode?: "numeric" | "text";
       autoComplete?: string;
       suffix?: string;
     }
-  | { kind: "select"; name: string; label: string; placeholder: string; options: readonly Option[]; hint?: string }
+  | {
+      kind: "select";
+      name: string;
+      label: string;
+      required?: string;
+      placeholder: string;
+      options: readonly Option[];
+      hint?: string;
+    }
   | { kind: "choice"; name: string; label: string; options: readonly RadioCardOption[] }
   | { kind: "date"; name: string; label: string; minYear: number; maxYear: number; order: "asc" | "desc"; hint?: string }
   // Make, model (filtered by make) and model year.

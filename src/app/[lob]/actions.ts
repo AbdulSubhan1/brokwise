@@ -17,7 +17,7 @@ import { readJourney, setJourney } from "@/lib/journey";
 import { createOpportunity, RATE_LIMITED, saveSelection, startPayment } from "@/lib/policydesk";
 import { formFieldOf, REQUIRED } from "@/lib/schemas";
 import { turnstileEnabled, verifyTurnstile } from "@/lib/turnstile";
-import { formDateFields, formFields, type FormKind, getLob, type LobConfig } from "@/lobs";
+import { formDateFields, formFields, type FormKind, getLob, type LobConfig, withFieldMessages } from "@/lobs";
 
 // The journey's server actions, shared by every line of business. Each form carries its line in a hidden `lob`
 // field; the line's config says which fields to read and how to build PolicyDesk's details.
@@ -73,7 +73,7 @@ async function send(form: FormKind, formData: FormData): Promise<FormState> {
   const values = valuesOf(lob, form, formData);
 
   const built = lob.buildDetails(form, values);
-  if (!built.ok) return { values, errors: built.errors };
+  if (!built.ok) return { values, errors: withFieldMessages(lob, form, built.errors) };
 
   // Field mistakes come back first so they don't spend the visitor's check; the check comes before PolicyDesk.
   if (turnstileEnabled()) {
@@ -88,7 +88,7 @@ async function send(form: FormKind, formData: FormData): Promise<FormState> {
     const field = result.error.code === "invalid_request" ? formFieldOf(result.error.field, Object.keys(values)) : null;
     if (field) {
       const message = POLICYDESK_MESSAGES[result.error.message ?? ""] ?? "Please check this field.";
-      return { values, errors: { [field]: message } };
+      return { values, errors: withFieldMessages(lob, form, { [field]: message }) };
     }
     return { values, errors: {}, formError: SEND_FAILED };
   }
