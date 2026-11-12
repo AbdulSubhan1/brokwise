@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isoFromParts } from "@/components/ui/date-parts";
+import { saveAnswers } from "@/lib/answers";
 import { clientIpFrom } from "@/lib/client-ip";
 import {
   BOT_CHECK_FAILED,
@@ -94,6 +95,8 @@ async function send(form: FormKind, formData: FormData): Promise<FormState> {
   }
 
   await setJourney(result.view.opportunity.publicId);
+  // The plans page's summary and its "Edit details" read the answers back; the short form has no plans page.
+  if (form === "full") await saveAnswers(lob.slug, result.view.opportunity.publicId, values, formFields(lob, form));
   // The full form creates a lead, so the visitor goes straight on to the plans; the short form waits for a call.
   redirect(form === "full" ? `/${lob.slug}/plans` : `/${lob.slug}/received`);
 }

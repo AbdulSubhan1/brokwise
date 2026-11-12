@@ -6,6 +6,8 @@ import { PageIntro } from "@/components/page-intro";
 import { PageLoading } from "@/components/page-loading";
 import { SiteHeader } from "@/components/site-header";
 import { Stepper } from "@/components/ui/stepper";
+import { readAnswers } from "@/lib/answers";
+import { readJourney } from "@/lib/journey";
 import { turnstileSiteKey } from "@/lib/turnstile";
 import { lobFrom } from "@/lobs/from-params";
 
@@ -21,9 +23,12 @@ export default function FullFormPage({ params }: PageProps<"/[lob]/details">) {
   );
 }
 
-// The line comes from the URL, so it is read inside <Suspense>: navigations between lines stay instant.
+// The line comes from the URL, so it is read inside <Suspense>: navigations between lines stay instant. Coming back
+// from the plans ("Edit details"), the form starts from the answers this journey sent.
 async function FullForm({ params }: Pick<PageProps<"/[lob]/details">, "params">) {
   const lob = await lobFrom(params);
+  const publicId = await readJourney();
+  const answers = publicId ? await readAnswers(lob.slug, publicId) : null;
   return (
     <>
       <SiteHeader />
@@ -33,7 +38,15 @@ async function FullForm({ params }: Pick<PageProps<"/[lob]/details">, "params">)
           <p>{lob.intros.full}</p>
         </PageIntro>
         <DemoNotice />
-        <LobForm slug={lob.slug} form="full" turnstileSiteKey={turnstileSiteKey()} />
+        {/* Keyed by the journey, so coming back from the plans starts a fresh form from its answers instead of the
+            one Next kept from the first visit. */}
+        <LobForm
+          key={answers ? publicId : "new"}
+          slug={lob.slug}
+          form="full"
+          turnstileSiteKey={turnstileSiteKey()}
+          initialValues={answers ?? undefined}
+        />
       </main>
     </>
   );
