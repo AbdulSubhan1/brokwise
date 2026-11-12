@@ -49,13 +49,18 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold">Questions</h2>
           <p className="mt-2 leading-relaxed text-ink">
             Write to{" "}
-            <a href={`mailto:${HELP_DESK.email}`} className={textLink}>
+            <a
+              href={`mailto:${HELP_DESK.email}`}
+              data-pulse-event="help_desk_emailed"
+              data-pulse-label="terms"
+              className={textLink}
+            >
               {HELP_DESK.email}
             </a>
             .
           </p>
         </section>
-        <Link href="/" className={`w-fit ${textLink}`}>
+        <Link href="/" data-pulse-event="back_home_clicked" data-pulse-label="terms" className={`w-fit ${textLink}`}>
           Back to home
         </Link>
       </main>

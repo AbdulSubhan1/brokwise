@@ -178,6 +178,8 @@ export function PlanCard({
               aria-expanded={showExtras}
               aria-controls={extrasId}
               onClick={() => setShowExtras((v) => !v)}
+              data-pulse-event="plan_extras_toggled"
+              data-pulse-label={`${lob}: ${plan.name}`}
               className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-line bg-card px-3 py-3 font-semibold hover:border-pine md:hidden ${focusRing}`}
             >
               Extras · {extras.length}
@@ -188,6 +190,8 @@ export function PlanCard({
           <button
             type="submit"
             disabled={pending}
+            data-pulse-event="plan_selected"
+            data-pulse-label={`${lob}: ${plan.name}`}
             aria-label={pending ? undefined : `Select ${plan.name}, ${formatUsd(total)} ${priceWords.price}`}
             className={`${featured ? primaryButton : secondaryButton} flex-[1.4] md:flex-none`}
           >
@@ -203,6 +207,8 @@ export function PlanCard({
               aria-expanded={showExtras}
               aria-controls={extrasId}
               onClick={() => setShowExtras((v) => !v)}
+              data-pulse-event="plan_extras_toggled"
+              data-pulse-label={`${lob}: ${plan.name}`}
               className={`flex min-h-9 items-center gap-1.5 rounded-sm font-semibold text-pine hover:text-pine-dark ${focusRing}`}
             >
               {showExtras ? "Hide extras" : `Add extras · ${extras.length} available`}

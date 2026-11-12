@@ -3,6 +3,7 @@ import { headers as requestHeaders } from "next/headers";
 import { z } from "zod";
 import { CLIENT_IP_HEADER, clientIpFrom, UNKNOWN_IP } from "./client-ip";
 import { getEnv } from "./env";
+import { reportApiCall } from "./pulse";
 import { SIGNATURE_HEADER, signRequest, TIMESTAMP_HEADER } from "./signature";
 
 // Signed server-to-server client for PolicyDesk's website API (/api/website/v1). The browser never sees the secret.
@@ -117,13 +118,24 @@ async function call(method: "GET" | "POST" | "PUT", path: string, body?: unknown
     accept: "application/json",
   };
   if (body !== undefined) headers["content-type"] = "application/json";
-  return fetch(url, {
-    method,
-    headers,
-    body: body === undefined ? undefined : raw,
-    cache: "no-store",
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  });
+  // Every PolicyDesk call goes to Pulse's API log: route, status and time, never the body
+  const started = performance.now();
+  const report = (status: number | null, error?: string) =>
+    reportApiCall({ method, host: url.host, path: url.pathname, status, ms: Math.round(performance.now() - started), error });
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: body === undefined ? undefined : raw,
+      cache: "no-store",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    report(res.status);
+    return res;
+  } catch (err) {
+    report(null, err instanceof Error ? `${err.name}: ${err.message}` : "fetch failed");
+    throw err;
+  }
 }
 
 export async function createOpportunity(input: OpportunityRequest): Promise<CreateResult> {

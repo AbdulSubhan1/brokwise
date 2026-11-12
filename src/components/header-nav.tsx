@@ -16,6 +16,8 @@ export function HeaderNav({ aside }: { aside?: ReactNode }) {
       <InsuranceMenu />
       <a
         href={TEL}
+        data-pulse-event="help_desk_called"
+        data-pulse-label="header"
         className={`hidden items-center gap-2 rounded-md text-sm font-semibold text-ink hover:text-pine md:flex ${focusRing}`}
       >
         <Headset aria-hidden className="size-5 text-pine" />
@@ -38,6 +40,8 @@ function LineLinks({ onPick }: { onPick?: () => void }) {
           <Link
             href={`/${slug}`}
             onClick={onPick}
+            data-pulse-event="nav_clicked"
+            data-pulse-label={slug}
             className={`flex items-start gap-3 rounded-xl p-2.5 hover:bg-paper ${focusRing}`}
           >
             <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-lg bg-pine-soft text-pine">
@@ -89,6 +93,8 @@ function InsuranceMenu() {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
+        data-pulse-event="nav_menu_opened"
+        data-pulse-label="insurance (desktop)"
         className={`flex items-center gap-1 rounded-md px-2 py-1.5 text-sm font-semibold text-ink hover:text-pine ${focusRing}`}
       >
         Insurance
@@ -118,6 +124,8 @@ function MobileSheet() {
         aria-label="Menu"
         aria-haspopup="dialog"
         onClick={() => dialog.current?.showModal()}
+        data-pulse-event="nav_menu_opened"
+        data-pulse-label="mobile"
         className={`grid size-10 place-items-center rounded-lg border border-line text-ink md:hidden ${focusRing}`}
       >
         <Menu aria-hidden className="size-5" />
@@ -149,6 +157,8 @@ function MobileSheet() {
           <p className="text-sm text-muted">Questions? Call the {HELP_DESK.name}.</p>
           <a
             href={TEL}
+            data-pulse-event="help_desk_called"
+            data-pulse-label="mobile menu"
             className={`mt-2 flex items-center gap-2 rounded-md font-semibold text-pine ${focusRing}`}
           >
             <Headset aria-hidden className="size-5" />

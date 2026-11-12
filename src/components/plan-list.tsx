@@ -71,6 +71,8 @@ export function PlanList({
           <button
             type="button"
             onClick={showMore}
+            data-pulse-event="more_plans_shown"
+            data-pulse-label={lob}
             className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-line bg-card px-6 font-bold hover:border-pine focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine md:w-auto"
           >
             Show {more} more {more === 1 ? "plan" : "plans"}

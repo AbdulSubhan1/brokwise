@@ -38,7 +38,7 @@ export function SiteFooter() {
           <ul className="mt-3 flex flex-col gap-2 text-sm">
             {LOB_META.map((l) => (
               <li key={l.slug}>
-                <Link href={`/${l.slug}`} className={link}>
+                <Link href={`/${l.slug}`} data-pulse-event="line_selected" data-pulse-label={`footer: ${l.slug}`} className={link}>
                   {l.title}
                 </Link>
               </li>
@@ -59,18 +59,23 @@ export function SiteFooter() {
           <h2 className="font-semibold text-white">Help desk</h2>
           <ul className="mt-3 flex flex-col gap-2 text-sm">
             <li>
-              <a href={`mailto:${HELP_DESK.email}`} className={link}>
+              <a href={`mailto:${HELP_DESK.email}`} data-pulse-event="help_desk_emailed" data-pulse-label="footer" className={link}>
                 {HELP_DESK.email}
               </a>
             </li>
             <li>
-              <a href={`tel:${HELP_DESK.phone.replace(/[^\d+]/g, "")}`} className={link}>
+              <a
+                href={`tel:${HELP_DESK.phone.replace(/[^\d+]/g, "")}`}
+                data-pulse-event="help_desk_called"
+                data-pulse-label="footer"
+                className={link}
+              >
                 {HELP_DESK.phone}
               </a>
             </li>
             <li>Every day, 9 am to 9 pm</li>
             <li>
-              <Link href="/terms" className={link}>
+              <Link href="/terms" data-pulse-event="terms_opened" data-pulse-label="footer" className={link}>
                 Terms and conditions
               </Link>
             </li>

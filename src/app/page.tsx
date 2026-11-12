@@ -36,7 +36,7 @@ export default function HomePage() {
               A coordinator helps you choose, and after you pay an advisor sees to the documents with you.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
-              <a href="#lines" className={primaryButton}>
+              <a href="#lines" data-pulse-event="choose_insurance_clicked" data-pulse-label="hero" className={primaryButton}>
                 Choose your insurance
                 <ArrowRight aria-hidden className="size-5" />
               </a>
@@ -68,6 +68,8 @@ export default function HomePage() {
               <li key={slug}>
                 <Link
                   href={`/${slug}`}
+                  data-pulse-event="line_selected"
+                  data-pulse-label={slug}
                   className={`group flex h-full flex-col rounded-2xl border border-line bg-card p-5 hover:border-pine ${focusRing}`}
                 >
                   <span

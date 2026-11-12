@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { isoFromParts } from "@/components/ui/date-parts";
 import { saveAnswers } from "@/lib/answers";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/form-state";
 import { readJourney, setJourney } from "@/lib/journey";
 import { createOpportunity, RATE_LIMITED, saveSelection, startPayment } from "@/lib/policydesk";
+import { sendToPulse } from "@/lib/pulse";
 import { formFieldOf, REQUIRED } from "@/lib/schemas";
 import { turnstileEnabled, verifyTurnstile } from "@/lib/turnstile";
 import { formDateFields, formFields, type FormKind, getLob, type LobConfig, withFieldMessages } from "@/lobs";
@@ -95,6 +97,15 @@ async function send(form: FormKind, formData: FormData): Promise<FormState> {
   }
 
   await setJourney(result.view.opportunity.publicId);
+  // A key log for Pulse, sent after the response so the visitor never waits for it
+  after(() =>
+    sendToPulse({
+      level: "info",
+      message: "Lead submitted",
+      path: `/${lob.slug}/${form === "full" ? "details" : "quick"}`,
+      context: { product: lob.product, form },
+    }),
+  );
   // The plans page's summary and its "Edit details" read the answers back; the short form has no plans page.
   if (form === "full") await saveAnswers(lob.slug, result.view.opportunity.publicId, values, formFields(lob, form));
   // The full form creates a lead, so the visitor goes straight on to the plans; the short form waits for a call.

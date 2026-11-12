@@ -169,7 +169,7 @@ function QuoteCard({ card }: { card: Card }) {
           <CardFoot>
             <p className="text-sm text-muted">
               Example prices for a typical driver. Yours are worked out from your answers.{" "}
-              <Link href="/car/details" className={textLink}>
+              <Link href="/car/details" data-pulse-event="journey_resumed" data-pulse-label="car: details" className={textLink}>
                 Get your car prices
               </Link>
             </p>
@@ -192,7 +192,12 @@ function QuoteCard({ card }: { card: Card }) {
           />
           <PlanRows plans={card.plans} />
           <CardFoot>
-            <Link href={`/${card.lob.slug}/plans`} className={`${primaryButton} w-full`}>
+            <Link
+              href={`/${card.lob.slug}/plans`}
+              data-pulse-event="journey_resumed"
+              data-pulse-label={`${card.lob.slug}: plans`}
+              className={`${primaryButton} w-full`}
+            >
               <ListChecks aria-hidden className="size-5" />
               See your plans
             </Link>
@@ -226,7 +231,12 @@ function QuoteCard({ card }: { card: Card }) {
             </dl>
           </div>
           <CardFoot>
-            <Link href={`/${card.lob.slug}/payment`} className={`${primaryButton} w-full`}>
+            <Link
+              href={`/${card.lob.slug}/payment`}
+              data-pulse-event="journey_resumed"
+              data-pulse-label={`${card.lob.slug}: payment`}
+              className={`${primaryButton} w-full`}
+            >
               <CreditCard aria-hidden className="size-5" />
               Review and pay
             </Link>
@@ -256,7 +266,12 @@ function QuoteCard({ card }: { card: Card }) {
           </div>
           <p className="mt-4 text-sm text-muted">Your advisor will contact you about documents.</p>
           <CardFoot>
-            <Link href={`/${card.lob.slug}/thank-you`} className={`${primaryButton} w-full`}>
+            <Link
+              href={`/${card.lob.slug}/thank-you`}
+              data-pulse-event="journey_resumed"
+              data-pulse-label={`${card.lob.slug}: thank-you`}
+              className={`${primaryButton} w-full`}
+            >
               <ReceiptText aria-hidden className="size-5" />
               See your order
             </Link>
@@ -299,7 +314,12 @@ function QuoteCard({ card }: { card: Card }) {
             ))}
           </ol>
           <CardFoot>
-            <Link href={`/${card.lob.slug}/received`} className={`inline-flex items-center gap-1.5 ${textLink}`}>
+            <Link
+              href={`/${card.lob.slug}/received`}
+              data-pulse-event="journey_resumed"
+              data-pulse-label={`${card.lob.slug}: received`}
+              className={`inline-flex items-center gap-1.5 ${textLink}`}
+            >
               See your request
               <ArrowRight aria-hidden className="size-4" />
             </Link>

@@ -15,6 +15,9 @@ vi.mock("@/lib/journey", () => ({
   setJourney: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/answers", () => ({ saveAnswers: vi.fn(async () => {}) }));
+// `after` runs its callback at once here, so the Pulse log can be asserted
+vi.mock("next/server", () => ({ after: (task: () => unknown) => task() }));
+vi.mock("@/lib/pulse", () => ({ sendToPulse: vi.fn(async () => {}) }));
 vi.mock("@/lib/policydesk", () => ({
   RATE_LIMITED: "rate_limited",
   createOpportunity: vi.fn(),
@@ -25,6 +28,7 @@ vi.mock("@/lib/policydesk", () => ({
 const { selectPlan, sendFullForm, sendQuickForm, startPaymentAction } = await import("./actions");
 const policydesk = await import("@/lib/policydesk");
 const { saveAnswers } = await import("@/lib/answers");
+const { sendToPulse } = await import("@/lib/pulse");
 const { BOT_CHECK_FAILED, EMPTY_FORM, TOO_MANY_REQUESTS, TURNSTILE_FIELD } = await import("@/lib/form-state");
 
 const createOpportunity = vi.mocked(policydesk.createOpportunity);
@@ -169,6 +173,12 @@ describe("lines of business", () => {
       email: "ayesha@example.test",
       phone: "+923001234567",
       details: { destination: "asia" },
+    });
+    expect(sendToPulse).toHaveBeenCalledWith({
+      level: "info",
+      message: "Lead submitted",
+      path: "/travel/quick",
+      context: { product: "travel", form: "short" },
     });
   });
 
