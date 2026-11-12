@@ -190,9 +190,15 @@ export function PlanCard({
               {formatUsd(total)}
             </strong>
           </p>
-          <button type="submit" disabled={pending} className={`${primaryButton} shrink-0`}>
+          {/* Every card has this button, so its name says which plan and price it picks. */}
+          <button
+            type="submit"
+            disabled={pending}
+            aria-label={pending ? undefined : `Select ${plan.name}, ${formatUsd(total)} ${priceWords.price}`}
+            className={`${primaryButton} shrink-0`}
+          >
             {pending && <LoaderCircle aria-hidden className="size-5 animate-spin motion-reduce:animate-none" />}
-            {pending ? "Saving…" : "Select this plan"}
+            {pending ? "Saving…" : "Select"}
           </button>
         </div>
       </form>
