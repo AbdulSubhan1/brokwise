@@ -1,13 +1,12 @@
-import { notFound } from "next/navigation";
-import { getLob, LOB_SLUGS } from "@/lobs";
+import { LOB_SLUGS } from "@/lobs";
 
-// Every line of business shares these pages. The four known slugs are prerendered; any other slug (/boat/details)
-// is a 404 with links to the four lines, before a page is drawn.
+// Every line of business shares these pages, and the four known slugs are prerendered. Each page reads its line
+// inside <Suspense> (src/lobs/from-params.ts), so navigations stay instant; any other slug (/boat/details) gets the
+// 404 page with links to the four lines.
 export function generateStaticParams() {
   return LOB_SLUGS.map((lob) => ({ lob }));
 }
 
-export default async function LobLayout({ children, params }: LayoutProps<"/[lob]">) {
-  if (!getLob((await params).lob)) notFound();
+export default function LobLayout({ children }: LayoutProps<"/[lob]">) {
   return children;
 }

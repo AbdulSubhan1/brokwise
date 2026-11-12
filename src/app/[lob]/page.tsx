@@ -1,6 +1,8 @@
 import { Check, ListChecks, PhoneCall } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { PageLoading } from "@/components/page-loading";
 import { SiteHeader } from "@/components/site-header";
 import { lobFrom } from "@/lobs/from-params";
 
@@ -8,7 +10,16 @@ export async function generateMetadata({ params }: PageProps<"/[lob]">): Promise
   return { title: (await lobFrom(params)).title };
 }
 
-export default async function LobPage({ params }: PageProps<"/[lob]">) {
+export default function LobPage({ params }: PageProps<"/[lob]">) {
+  return (
+    <Suspense fallback={<PageLoading label="Loading…" wide />}>
+      <Lob params={params} />
+    </Suspense>
+  );
+}
+
+// The line comes from the URL, so it is read inside <Suspense>: navigations between lines stay instant.
+async function Lob({ params }: Pick<PageProps<"/[lob]">, "params">) {
   const lob = await lobFrom(params);
   const Icon = lob.icon;
   const choices = [

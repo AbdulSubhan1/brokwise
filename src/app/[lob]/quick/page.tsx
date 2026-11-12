@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { DemoNotice } from "@/components/demo-notice";
 import { LobForm } from "@/components/lob-form";
 import { PageIntro } from "@/components/page-intro";
+import { PageLoading } from "@/components/page-loading";
 import { SiteHeader } from "@/components/site-header";
 import { Stepper } from "@/components/ui/stepper";
 import { turnstileSiteKey } from "@/lib/turnstile";
@@ -11,7 +13,16 @@ export async function generateMetadata({ params }: PageProps<"/[lob]/quick">): P
   return { title: `Call me back · ${(await lobFrom(params)).title}` };
 }
 
-export default async function QuickFormPage({ params }: PageProps<"/[lob]/quick">) {
+export default function QuickFormPage({ params }: PageProps<"/[lob]/quick">) {
+  return (
+    <Suspense fallback={<PageLoading label="Loading the form…" />}>
+      <QuickForm params={params} />
+    </Suspense>
+  );
+}
+
+// The line comes from the URL, so it is read inside <Suspense>: navigations between lines stay instant.
+async function QuickForm({ params }: Pick<PageProps<"/[lob]/quick">, "params">) {
   const lob = await lobFrom(params);
   return (
     <>
