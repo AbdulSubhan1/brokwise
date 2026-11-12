@@ -11,7 +11,8 @@ const MONTH_OPTIONS = MONTHS.map((m, i) => ({ value: String(i + 1), label: m }))
 /**
  * A date as three selects (Day, Month, Year) in one labelled group. The form sends one ISO value in a hidden field
  * named `name`; the selects also carry `<name>-day` etc. so the server can build it when JavaScript is off.
- * `order` puts the newest years first (dates of birth) or the nearest first (trip dates).
+ * `order` puts the newest years first (dates of birth) or the nearest first (trip dates). Each select's own label is
+ * for screen readers only: its placeholder shows the same word, and the selects line up with a text field beside them.
  */
 export function DateField({
   name,
@@ -51,13 +52,12 @@ export function DateField({
 
   const part = (key: "day" | "month" | "year", text: string, options: { value: string; label: string }[], width: string) => (
     <div className={width}>
-      <label htmlFor={`${name}-${key}`} className="block text-sm text-muted">
+      <label htmlFor={`${name}-${key}`} className="sr-only">
         {text}
       </label>
       <Select
         id={`${name}-${key}`}
         name={`${name}-${key}`}
-        className="mt-1"
         placeholder={text}
         options={options}
         value={parts[key]}

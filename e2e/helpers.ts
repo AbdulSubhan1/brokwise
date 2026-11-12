@@ -10,6 +10,9 @@ export function usd(n: number): string {
   return `$${n.toLocaleString("en-US")}`;
 }
 
+/** A plan card's Select button: its name says the plan and price ("Select Harbor Essential, $1,140 a year"). */
+export const SELECT_PLAN = /^Select .+, \$[\d,]+ (a year|for this trip)$/;
+
 /** Picks an ISO date (YYYY-MM-DD) in a DateField: its Day, Month and Year selects inside the labelled group. */
 export async function pickDate(page: Page, label: string, iso: string) {
   const [year, month, day] = iso.split("-");

@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  // The "Your choice is saved" page became part of the payment page ("Review and pay"); old links still land there.
+  async redirects() {
+    return [{ source: "/:lob/selected", destination: "/:lob/payment", permanent: false }];
+  },
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,

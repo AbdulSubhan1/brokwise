@@ -20,8 +20,8 @@ per line in `src/lobs/`:
 - `/<line>/quick` short form (creates an opportunity)
 - `/<line>/received` request received, with the assigned coordinator in the header
 - `/<line>/plans` the line's plans with add-ons and a live total (full-form journeys only)
-- `/<line>/selected` the saved plan and add-ons, priced by PolicyDesk, with the quote reference
-- `/<line>/payment` lines, total and terms box; "Pay" opens PaySandbox's hosted checkout
+- `/<line>/payment` "Review and pay": the saved plan and add-ons, priced by PolicyDesk, with the quote reference,
+  "Change plan", and the terms box; "Pay" opens PaySandbox's hosted checkout (`/<line>/selected` redirects here)
 - `/<line>/thank-you` the paid order and the advisor assigned after payment (or "Confirming your payment…")
 - `/pay/<token>` a coordinator's private payment link ("Call me back" journeys): opens the line's payment page, or
   its thank-you page once paid; `/pay/expired` and `/pay/invalid` when it can't be used

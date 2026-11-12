@@ -1,5 +1,6 @@
 import { COUNTRY_CODES } from "@/lib/schemas";
 import type { FormState } from "@/lib/form-state";
+import { FIXED_LABELS } from "@/lobs/build";
 import { FieldError } from "./form-controls";
 import { Select } from "./ui/select";
 import { control } from "./ui/styles";
@@ -13,12 +14,12 @@ export function MobileField({ state }: { state: FormState }) {
   return (
     <div>
       <label htmlFor="mobile" className="block font-medium">
-        Mobile number
+        {FIXED_LABELS.mobile}
       </label>
       <div className="mt-1 flex gap-2">
         <Select
           name="countryCode"
-          aria-label="Country code"
+          aria-label={FIXED_LABELS.countryCode}
           defaultValue={values.countryCode ?? "+92"}
           options={DIALS}
           className="w-[9.5rem] shrink-0"

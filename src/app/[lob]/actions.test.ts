@@ -218,10 +218,47 @@ describe("lines of business", () => {
     expect(state.errors).toEqual({ endDate: "A single trip can be up to 180 days." });
   });
 
+  it("an empty car form names each missing field instead of a generic message", async () => {
+    const state = await sendFullForm(EMPTY_FORM, form({ countryCode: "+92" }));
+    expect(state.errors).toEqual({
+      make: "Pick a car make.",
+      model: "Choose your car model.",
+      year: "Choose your model year.",
+      gccSpec: "Choose yes or no.",
+      carValue: "Enter your car value.",
+      customerName: "Enter your full name.",
+      dateOfBirth: "Enter your date of birth.",
+      nationality: "Enter your nationality.",
+      city: "Enter your city.",
+      yearsLicensed: "Enter your years with a driving licence.",
+      email: "Enter your email.",
+      mobile: "Enter your mobile number.",
+    });
+    expect(createOpportunity).not.toHaveBeenCalled();
+  });
+
+  it("a PolicyDesk 'required' answer gets the field's own message too", async () => {
+    createOpportunity.mockResolvedValue({
+      ok: false,
+      status: 400,
+      error: { code: "invalid_request", field: "details.city", message: "validation.required" },
+    });
+    const state = await sendQuickForm(EMPTY_FORM, form({ ...CONTACT, city: "Lahore" }, "home"));
+    expect(state.errors).toEqual({ city: "Enter your city." });
+  });
+
   it("a form without a line we sell is refused before PolicyDesk is called", async () => {
     const state = await sendQuickForm(EMPTY_FORM, form(QUICK, "boat"));
     expect(state.formError).toBe("We couldn't send your request. Please try again.");
     expect(createOpportunity).not.toHaveBeenCalled();
+  });
+
+  it("a saved plan goes straight to the review-and-pay page", async () => {
+    saveSelection.mockResolvedValue({ ok: true, selection: {} as never });
+    await expect(selectPlan(form({ planId: "3", addOnIds: ["7"] }, "travel"))).rejects.toThrow(
+      "redirect:/travel/payment",
+    );
+    expect(saveSelection).toHaveBeenCalledWith("0b0e3a5e-8f8d-4c3c-9a43-2b8f7c1d2e3f", { planId: 3, addOnIds: [7] });
   });
 
   it("plan and payment redirects stay in the visitor's line", async () => {

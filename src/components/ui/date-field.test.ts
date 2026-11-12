@@ -48,6 +48,8 @@ describe("DateField", () => {
     expect(html).toContain(">Day<");
     expect(html).toContain(">Month<");
     expect(html).toContain(">Year<");
+    // The part labels are for screen readers; the placeholders show the same words.
+    expect(html).toContain('<label for="dateOfBirth-day" class="sr-only">Day</label>');
     expect(html).toMatch(/<input[^>]*type="hidden"[^>]*name="dateOfBirth"[^>]*value="1995-11-15"/);
   });
 });

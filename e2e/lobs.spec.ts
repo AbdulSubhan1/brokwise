@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { dollars, pickDate, usd } from "./helpers";
+import { dollars, pickDate, SELECT_PLAN, usd } from "./helpers";
 
 // The lines beyond car run on the same /[lob] pages, driven by src/lobs. PolicyDesk routes travel and home to its
 // home_travel department (coordinator Mehwish Iqbal, advisor Tariq Hussain in its seed) and health to its health
@@ -43,14 +43,21 @@ test("travel full journey → plans → pay (fake) → thank-you with a home_tra
   await expect(page.getByRole("link", { name: "Single trip", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Third party", exact: true })).toHaveCount(0);
 
-  await page.getByRole("article").first().getByRole("button", { name: "Select this plan" }).click();
-  await expect(page).toHaveURL("/travel/selected", { timeout: 30_000 });
-  const total = dollars(await page.getByTestId("selection-total").textContent());
-  await page.getByRole("main").getByRole("link", { name: "Continue to payment" }).click();
+  // A single-trip plan is priced for the trip, not for a year.
+  await page.getByRole("link", { name: "Single trip", exact: true }).click();
+  await expect(page).toHaveURL("/travel/plans?cover=single_trip");
+  await expect(page.getByText("Prices are for the whole trip, in US dollars.")).toBeVisible();
+  const trip = page.getByRole("article").first();
+  await expect(trip.getByText("Total for this trip")).toBeVisible();
+  await expect(trip.getByRole("button", { name: SELECT_PLAN })).toHaveAccessibleName(/ for this trip$/);
+
+  await trip.getByRole("button", { name: SELECT_PLAN }).click();
   await expect(page).toHaveURL("/travel/payment", { timeout: 30_000 });
   const main = page.getByRole("main");
-  await expect(main.getByRole("heading", { name: "Payment" })).toBeVisible({ timeout: 30_000 });
+  await expect(main.getByRole("heading", { name: "Review and pay" })).toBeVisible({ timeout: 30_000 });
   await expect(main.getByTestId("quote-reference")).toHaveText(/^TRV-[A-Z2-9]{7}-Q\d+$/);
+  await expect(main.getByText("Total for this trip")).toBeVisible();
+  const total = dollars(await main.getByTestId("order-total").textContent());
 
   await main.getByLabel(TERMS).check();
   await page.getByRole("button", { name: `Pay ${usd(total)} with PaySandbox` }).click();
@@ -63,7 +70,10 @@ test("travel full journey → plans → pay (fake) → thank-you with a home_tra
   await expect(main.getByText("Your advisor Tariq Hussain will contact you about documents.")).toBeVisible();
   const badge = page.getByRole("button", { name: "Your advisor" });
   await badge.hover();
-  await expect(page.getByRole("banner").getByRole("link", { name: "tariq@policydesk.dev" })).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("link", { name: "Email Tariq Hussain through the help desk" })).toHaveAttribute(
+    "href",
+    /^mailto:help@brokwise\.test\?subject=For%20Tariq%20Hussain%3A%20TRV-/,
+  );
 });
 
 test("home call me back → received shows a home_travel coordinator", async ({ page }) => {
@@ -78,8 +88,9 @@ test("home call me back → received shows a home_travel coordinator", async ({ 
   await expect(page.getByRole("heading", { name: "Request received" })).toBeVisible();
   await expect(page.getByText("Your coordinator will call you.")).toBeVisible();
   const badge = page.getByRole("button", { name: "Your coordinator" });
+  await expect(badge).toContainText("Mehwish");
   await badge.hover();
-  await expect(page.getByRole("banner").getByRole("link", { name: "mehwish@policydesk.dev" })).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("link", { name: "Email Mehwish Iqbal through the help desk" })).toBeVisible();
 });
 
 test("health plans show the included wellness check-up", async ({ page }) => {

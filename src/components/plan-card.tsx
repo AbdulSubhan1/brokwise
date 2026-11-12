@@ -24,17 +24,20 @@ const TAGS = {
  * collapsible "Add-ons" list of checkboxes, and the total follows them as the visitor ticks. The form sends only the
  * line, the plan id and the ticked add-on ids. `chosenIds` is set on the visitor's saved choice: the card is marked
  * and those add-ons are ticked again. On mobile the total and the button stick to the bottom while the card is in view.
+ * `priceWords` say how long the price runs ("Total a year", "Total for this trip"), from the line's cover config.
  */
 export function PlanCard({
   lob,
   plan,
   chosenIds,
   tags = [],
+  priceWords,
 }: {
   lob: string;
   plan: WebsitePlan;
   chosenIds?: number[];
   tags?: readonly PlanTag[];
+  priceWords: { total: string; price: string };
 }) {
   const titleId = useId();
   const addOnsId = useId();
@@ -182,14 +185,20 @@ export function PlanCard({
 
         <div className="sticky bottom-0 -mx-5 mt-auto flex items-center justify-between gap-3 border-t border-line bg-card px-5 py-3 md:static md:mx-0 md:px-0 md:pt-4 md:pb-0">
           <p aria-live="polite">
-            <span className="block text-xs text-muted">Total a year</span>
+            <span className="block text-xs text-muted">{priceWords.total}</span>
             <strong className="text-2xl font-extrabold" data-testid="plan-total">
               {formatUsd(total)}
             </strong>
           </p>
-          <button type="submit" disabled={pending} className={`${primaryButton} shrink-0`}>
+          {/* Every card has this button, so its name says which plan and price it picks. */}
+          <button
+            type="submit"
+            disabled={pending}
+            aria-label={pending ? undefined : `Select ${plan.name}, ${formatUsd(total)} ${priceWords.price}`}
+            className={`${primaryButton} shrink-0`}
+          >
             {pending && <LoaderCircle aria-hidden className="size-5 animate-spin motion-reduce:animate-none" />}
-            {pending ? "Saving…" : "Select this plan"}
+            {pending ? "Saving…" : "Select"}
           </button>
         </div>
       </form>

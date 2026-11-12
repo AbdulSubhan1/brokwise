@@ -9,15 +9,19 @@ async function expectCoordinatorInHeader(page: Page) {
   const header = page.getByRole("banner");
 
   // The card opens on hover…
+  const email = header.getByRole("link", { name: /^Email .+ through the help desk$/ });
   await badge.hover();
-  await expect(header.getByRole("link", { name: /@/ })).toBeVisible();
-  await expect(header.getByRole("link", { name: /^\+92/ })).toHaveAttribute("href", /^tel:\+92\d+$/);
+  await expect(email).toBeVisible();
+  // The person's own (PolicyDesk login) email never shows: Email writes to the help desk, naming them.
+  await expect(email).toHaveAttribute("href", /^mailto:help@brokwise\.test\?subject=For%20/);
+  await expect(header.getByText(/@policydesk/)).toHaveCount(0);
+  await expect(header.getByRole("link", { name: /^Call .+ on \+92/ })).toHaveAttribute("href", /^tel:\+92\d+$/);
 
   // …and on keyboard focus.
   await page.mouse.move(0, 0);
-  await expect(header.getByRole("link", { name: /@/ })).toBeHidden();
+  await expect(email).toBeHidden();
   await badge.focus();
-  await expect(header.getByRole("link", { name: /@/ })).toBeVisible();
+  await expect(email).toBeVisible();
 }
 
 async function pickCar(page: Page, make: string, model: string, year: string) {
@@ -69,6 +73,22 @@ test("get prices now → plans page shows CAR- reference and a coordinator", asy
   await expect(page.getByRole("heading", { name: "Choose your plan" })).toBeVisible();
   await expect(page.getByText(/^CAR-[A-Z2-9]{7}$/)).toBeVisible();
   await expectCoordinatorInHeader(page);
+});
+
+test("an empty details form lists its mistakes at the top and moves focus there", async ({ page }) => {
+  await page.goto("/car/details");
+  await page.getByRole("button", { name: "Get prices" }).click();
+
+  const summary = page.getByRole("alert").filter({ hasText: "Fix 12 things to see your prices" });
+  await expect(summary).toBeFocused();
+  // Each field says what it needs, under the field and in the summary.
+  await expect(page.getByText("This field is required.")).toHaveCount(0);
+  const model = page.getByLabel("Car model");
+  await expect(model).toHaveAttribute("aria-invalid", "true");
+  await expect(model).toHaveAccessibleDescription("Choose your car model.");
+
+  await summary.getByRole("link", { name: "Enter your date of birth." }).click();
+  await expect(page.getByRole("group", { name: "Date of birth", exact: true }).getByLabel("Day")).toBeFocused();
 });
 
 test("received without a cookie redirects to /car", async ({ page }) => {

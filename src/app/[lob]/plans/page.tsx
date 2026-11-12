@@ -14,6 +14,7 @@ import { TOO_MANY_REQUESTS } from "@/lib/form-state";
 import { readJourney } from "@/lib/journey";
 import { planTags } from "@/lib/plan-tags";
 import { getOpportunity, getPlans } from "@/lib/policydesk";
+import { pricesNote, priceWords } from "@/lobs";
 import { lobFrom, stayInOwnLine } from "@/lobs/from-params";
 
 export const metadata: Metadata = { title: "Choose your plan", robots: { index: false } };
@@ -69,7 +70,7 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
           <Stepper current="plan" />
         </div>
         <PageIntro line={lob} title="Choose your plan">
-          <p>Prices are yearly, in US dollars.</p>
+          <p>{pricesNote(lob, cover)}</p>
           {view.lead && (
             <p className="mt-1 text-sm">
               Your reference: <strong className="font-mono tracking-wide text-ink">{view.lead.reference}</strong>
@@ -123,6 +124,7 @@ async function Plans({ params, searchParams }: Pick<PageProps<"/[lob]/plans">, "
                   plan={plan}
                   chosenIds={chosenIds}
                   tags={tags.get(plan.id)}
+                  priceWords={priceWords(lob, plan.cover)}
                 />
               );
             })}

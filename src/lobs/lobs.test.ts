@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { getLob, LOB_SLUGS, lobForProduct } from "./index";
+import { REQUIRED } from "@/lib/schemas";
+import { formLabels, getLob, LOB_SLUGS, lobForProduct, pricesNote, priceWords, withFieldMessages } from "./index";
 
 // buildDetails turns a form's raw strings into what PolicyDesk's POST /opportunities takes, or field errors.
 
@@ -183,5 +184,75 @@ describe("buildDetails", () => {
     const result = getLob("health")!.buildDetails("short", { ...CONTACT, email: "nope", coverFor: "" });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(Object.keys(result.errors).sort()).toEqual(["coverFor", "email"]);
+  });
+});
+
+describe("field labels and messages", () => {
+  it("lists a form's fields in order, with where each summary link goes", () => {
+    const travel = formLabels(getLob("travel")!, "full");
+    expect(travel.map((l) => [l.name, l.anchor])).toEqual([
+      ["destination", "destination"],
+      ["tripType", "tripType"],
+      ["startDate", "startDate-day"],
+      ["endDate", "endDate-day"],
+      ["travellers", "travellers"],
+      ["oldestAge", "oldestAge"],
+      ["customerName", "customerName"],
+      ["email", "email"],
+      ["mobile", "mobile"],
+      ["countryCode", "mobile"],
+    ]);
+  });
+
+  it("derives the required message from the label, unless the config gives one", () => {
+    const messages = Object.fromEntries(formLabels(getLob("travel")!, "full").map((l) => [l.name, l.required]));
+    expect(messages).toMatchObject({
+      startDate: "Enter your start date.",
+      travellers: "Choose how many people are travelling.",
+      oldestAge: "Enter your oldest traveller's age.",
+    });
+    const health = Object.fromEntries(formLabels(getLob("health")!, "full").map((l) => [l.name, l.required]));
+    // "Your date of birth" doesn't become "your your date of birth".
+    expect(health.dateOfBirth).toBe("Enter your date of birth.");
+    const home = Object.fromEntries(formLabels(getLob("home")!, "full").map((l) => [l.name, l.required]));
+    expect(home.buildingValue).toBe("Enter your building value.");
+  });
+
+  it("replaces only the generic required message", () => {
+    expect(
+      withFieldMessages(getLob("car")!, "short", { make: "Pick a car make.", model: REQUIRED, unknown: REQUIRED }),
+    ).toEqual({ make: "Pick a car make.", model: "Choose your car model.", unknown: REQUIRED });
+  });
+
+  it("a hidden field left empty by a choice still gets its own message", () => {
+    const family = { coverFor: "family", dateOfBirth: "1988-06-15", city: "Karachi", preExisting: "no" };
+    expect(errors("health", "full", family)).toEqual({ children: REQUIRED });
+    expect(withFieldMessages(getLob("health")!, "full", { children: REQUIRED })).toEqual({
+      children: "Choose your number of children.",
+    });
+  });
+});
+
+describe("price period", () => {
+  const travel = getLob("travel")!;
+
+  it("a single trip or Schengen plan is priced for the trip, an annual one for a year", () => {
+    expect(priceWords(travel, "single_trip")).toEqual({ total: "Total for this trip", price: "for this trip" });
+    expect(priceWords(travel, "schengen").total).toBe("Total for this trip");
+    expect(priceWords(travel, "annual_multi_trip")).toEqual({ total: "Total a year", price: "a year" });
+  });
+
+  it("every other line is priced for a year", () => {
+    for (const slug of ["car", "home", "health"]) {
+      const lob = getLob(slug)!;
+      for (const c of lob.covers) expect(priceWords(lob, c.value).total).toBe("Total a year");
+      expect(pricesNote(lob)).toBe("Prices are yearly, in US dollars.");
+    }
+  });
+
+  it("the plans note follows the cover filter", () => {
+    expect(pricesNote(travel, "single_trip")).toBe("Prices are for the whole trip, in US dollars.");
+    expect(pricesNote(travel, "annual_multi_trip")).toBe("Prices are yearly, in US dollars.");
+    expect(pricesNote(travel)).toBe("Prices are in US dollars, for a year or for the whole trip as each plan says.");
   });
 });
