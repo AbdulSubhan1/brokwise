@@ -22,6 +22,15 @@ export function errorsByField(issues: readonly { path: PropertyKey[]; message: s
   return errors;
 }
 
+/** The error key a control belongs to: a date's day, month and year inputs all belong to the date's own name. */
+export const errorKeyOf = (inputName: string) => inputName.replace(/-(day|month|year)$/, "");
+
+/** The errors still to show once the visitor has changed some fields since the last send. */
+export function errorsLeft(errors: FormState["errors"], edited: readonly string[]): FormState["errors"] {
+  if (edited.length === 0) return errors;
+  return Object.fromEntries(Object.entries(errors).filter(([field]) => !edited.includes(field)));
+}
+
 /** Shown wherever PolicyDesk answers 429: this visitor's IP passed one of its hourly limits. */
 export const TOO_MANY_REQUESTS = "Too many requests. Please wait a few minutes and try again.";
 

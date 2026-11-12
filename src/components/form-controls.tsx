@@ -1,12 +1,5 @@
-import { CircleAlert, LoaderCircle, type LucideIcon } from "lucide-react";
-import {
-  type InputHTMLAttributes,
-  type MouseEvent,
-  type ReactNode,
-  type Ref,
-  type SelectHTMLAttributes,
-  useId,
-} from "react";
+import { LoaderCircle, type LucideIcon } from "lucide-react";
+import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from "react";
 import { FieldError } from "./ui/field-error";
 import { SectionHeading } from "./ui/section-heading";
 import { type Option, Select } from "./ui/select";
@@ -110,60 +103,6 @@ export function SubmitButton({ pending, children }: { pending: boolean; children
       {pending && <LoaderCircle aria-hidden className="size-5 animate-spin motion-reduce:animate-none" />}
       {pending ? "Sending…" : children}
     </button>
-  );
-}
-
-/**
- * The form's mistakes after a failed send, at the top of the form: a heading and one link per field. The form moves
- * focus here (hence tabIndex -1); a link moves focus to its field and scrolls it into view, or jumps to it without
- * JavaScript.
- */
-export function ErrorSummary({
-  ref,
-  title,
-  errors,
-}: {
-  ref?: Ref<HTMLDivElement>;
-  title: string;
-  errors: readonly { anchor: string; message: string }[];
-}) {
-  const titleId = useId();
-  if (errors.length === 0) return null;
-
-  function goTo(e: MouseEvent<HTMLAnchorElement>, anchor: string) {
-    const field = document.getElementById(anchor);
-    if (!field) return;
-    e.preventDefault();
-    field.scrollIntoView({ block: "center" });
-    field.focus({ preventScroll: true });
-  }
-
-  return (
-    <div
-      ref={ref}
-      role="alert"
-      tabIndex={-1}
-      aria-labelledby={titleId}
-      className="rounded-2xl border-2 border-danger bg-card p-4 focus:outline-2 focus:outline-offset-2 focus:outline-danger md:p-6"
-    >
-      <h2 id={titleId} className="flex items-center gap-2 text-lg font-bold text-danger">
-        <CircleAlert aria-hidden className="size-5 shrink-0" />
-        {title}
-      </h2>
-      <ul className="mt-2 flex flex-col gap-1">
-        {errors.map((e) => (
-          <li key={e.anchor}>
-            <a
-              href={`#${e.anchor}`}
-              onClick={(event) => goTo(event, e.anchor)}
-              className="rounded-sm font-medium text-danger underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
-            >
-              {e.message}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 
